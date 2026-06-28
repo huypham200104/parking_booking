@@ -1,0 +1,37 @@
+using System.ComponentModel.DataAnnotations;
+using parking_booking_backend.Models;
+
+namespace parking_booking_backend.DTOs;
+
+public sealed record UserResponse(Guid Id, string PhoneNumber, string FullName, Role Role, int TrustScore);
+
+public sealed record VehicleResponse(Guid Id, Guid UserId, string LicensePlate, VehicleType VehicleType, bool IsDefault);
+
+public sealed record CreateVehicleRequest(
+    [Required, StringLength(20, MinimumLength = 5)] string LicensePlate,
+    [Required] VehicleType VehicleType,
+    bool IsDefault);
+
+public sealed record MonthlyPassResponse(
+    Guid Id,
+    Guid UserId,
+    Guid VehicleId,
+    Guid ParkingLotId,
+    DateTime StartDate,
+    DateTime EndDate,
+    decimal Price,
+    MonthlyPassStatus Status);
+
+public sealed record CreateMonthlyPassRequest(
+    [Required] Guid VehicleId,
+    [Required] Guid ParkingLotId,
+    [Range(1, 365)] int DurationDays);
+
+public sealed record WalletResponse(Guid Id, Guid UserId, decimal Balance, IReadOnlyCollection<WalletTransactionResponse> Transactions);
+
+public sealed record WalletTransactionResponse(Guid Id, decimal Amount, WalletTransactionType Type, string ReferenceId);
+
+public sealed record DepositRequest([Range(10000, 50000000)] decimal Amount);
+
+public sealed record DepositResponse(decimal Amount, string VietQrUrl);
+

@@ -1,59 +1,58 @@
-using Microsoft.EntityFrameworkCore;
+using parking_booking_backend.Extensions;
+using parking_booking_backend.Interfaces;
+using parking_booking_backend.Middlewares;
 
+// Khởi tạo 1 object builder là 1 cái kho chứa khổng lồ
 var builder = WebApplication.CreateBuilder(args);
 
-// Đăng ký DbContext với chuỗi kết nối
-builder.Services.AddDbContext<parking_booking_backend.Data.ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+builder.Services.AddOpenApi();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendDev", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+builder.Services.AddRedisServices(builder.Configuration);
+builder.Services.AddParkingBookingServices(builder.Configuration);
 
+// object build đã được đóng gói xong và bắt đầu 
 var app = builder.Build();
 
-// 1. Tạo dữ liệu giả lập (Mock Data) lưu trong bộ nhớ
-var todos = new List<TodoItem>
+// Seed dữ liệu giả lập 
+if (args.Contains("--seed", StringComparer.OrdinalIgnoreCase))
 {
-    new TodoItem(1, "Học .NET 10 trên VS Code xanh", true),
-    new TodoItem(2, "Viết API đầu tiên", false)
-};
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<IMockDataSeeder>();
+    var recreateDatabase = args.Contains("--recreate", StringComparer.OrdinalIgnoreCase);
+    var result = await seeder.SeedAsync(recreateDatabase, CancellationToken.None);
+    Console.WriteLine(result.Message);
+    Console.WriteLine($"Users: {result.Users}, ParkingLots: {result.ParkingLots}, Floors: {result.ParkingFloors}, Slots: {result.ParkingSlots}, Vehicles: {result.Vehicles}, Vouchers: {result.Vouchers}");
+    return;
+}
 
-// 2. API GET: Lấy toàn bộ danh sách Todo
-app.MapGet("/api/todos", () => todos);
+// Các quy định được đặt ra khi app được chạy 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors("FrontendDev");
 
-// 3. API GET (chứa tham số): Lấy Todo theo ID
-app.MapGet("/api/todos/{id}", (int id) => 
-    todos.FirstOrDefault(t => t.Id == id) is TodoItem todo 
-        ? Results.Ok(todo) 
-        : Results.NotFound("Không tìm thấy việc này!"));
-
-// 4. API POST: Thêm một Todo mới
-app.MapPost("/api/todos", (TodoItem newTodo) => {
-    todos.Add(newTodo);
-    return Results.Created($"/api/todos/{newTodo.Id}", newTodo);
-});
-
-// API Test: Kiểm tra kết nối Database
-app.MapGet("/api/test-db", async (parking_booking_backend.Data.ApplicationDbContext dbContext) =>
+// Chỉ chạy openApi khi ở môi trường development 
+if (app.Environment.IsDevelopment())
 {
-    try
-    {
-        // CanConnectAsync sẽ trả về true nếu chuỗi kết nối hợp lệ VÀ Database đã tồn tại
-        bool canConnect = await dbContext.Database.CanConnectAsync();
-        
-        if (canConnect)
-        {
-            return Results.Ok(new { Message = "Kết nối Database thành công và Database đã tồn tại!" });
-        }
-        else
-        {
-            return Results.Ok(new { Message = "Kết nối SQL Server thành công NHƯNG Database chưa được tạo. Hãy chạy Migration (Update-Database) nhé!" });
-        }
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(title: "Lỗi kết nối Database", detail: ex.Message);
-    }
-});
+    app.MapOpenApi();
+}
+
+// Cấu hình các quy định khi app được chạy
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// API 
+app.MapControllers();
 
 app.Run();
-
-// Định nghĩa cấu trúc dữ liệu Todo
-record TodoItem(int Id, string Title, bool IsCompleted);

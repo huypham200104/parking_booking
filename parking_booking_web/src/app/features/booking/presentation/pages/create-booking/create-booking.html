@@ -1,0 +1,47 @@
+<section class="booking-page">
+  <div class="booking-shell container">
+    @if (!parkingLotId()) {
+      <header class="lot-picker__header"><div><p class="booking-kicker">Bắt đầu đặt chỗ</p><h1>Chọn bãi đỗ xe</h1><p>Toàn bộ bãi đỗ trong hệ thống, sắp xếp để bạn chọn trước khi xem sơ đồ chỗ.</p></div><a class="btn btn-secondary" routerLink="/map">Xem trên bản đồ</a></header>
+
+      @if (errorMessage()) { <div class="booking-error" role="alert">{{ errorMessage() }} <button type="button" (click)="loadParkingLots()">Thử lại</button></div> }
+
+      @if (isLoading()) {
+        <div class="lot-grid lot-grid--loading">@for (item of [1,2,3,4,5,6]; track item) { <div><span></span><span></span><span></span></div> }</div>
+      } @else {
+        <div class="lot-count"><strong>{{ parkingLots().length }}</strong> bãi đỗ đang hoạt động</div>
+        <div class="lot-grid">
+          @for (lot of pagedParkingLots(); track lot.id) {
+            <article class="lot-card">
+              <div class="lot-card__top"><span [class.full]="lot.availableSlots === 0">{{ lot.availableSlots > 0 ? 'Còn chỗ' : 'Đã đầy' }}</span><strong>{{ lot.availableSlots }}/{{ lot.totalSlots }}</strong></div>
+              <div><h2>{{ lot.name }}</h2><p>{{ lot.address }}</p></div>
+              <dl><div><dt>Giá từ</dt><dd>{{ money(lot.firstBlockPrice) }}/{{ lot.firstBlockHours }}h</dd></div></dl>
+              <button class="btn btn-primary" type="button" [disabled]="lot.availableSlots === 0" (click)="chooseParkingLot(lot)">{{ lot.availableSlots > 0 ? 'Chọn bãi này' : 'Tạm hết chỗ' }}</button>
+            </article>
+          } @empty { <div class="booking-state"><span>P</span><h2>Chưa có bãi đỗ</h2><p>Hệ thống chưa có bãi đỗ phù hợp để đặt chỗ.</p></div> }
+        </div>
+
+        @if (totalPages() > 1) {
+          <nav class="pagination" aria-label="Phân trang danh sách bãi đỗ"><button type="button" [disabled]="page() === 1" (click)="goToPage(page() - 1)">Trước</button><span>Trang {{ page() }} / {{ totalPages() }}</span><button type="button" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">Sau</button></nav>
+        }
+      }
+    } @else if (isLoading()) {
+      <div class="booking-state"><h1>Đang chuẩn bị sơ đồ chỗ đỗ</h1><p>ParkGo đang tải bãi xe, phương tiện và các tầng khả dụng.</p></div>
+    } @else if (createdBooking(); as booking) {
+      <div class="booking-success"><p class="booking-kicker">Đặt chỗ thành công</p><h1>Chỗ đỗ đã được giữ</h1><p>Mã đặt chỗ của bạn</p><strong>{{ booking.bookingCode }}</strong><div><a class="btn btn-primary" routerLink="/history">Xem lịch sử</a><a class="btn btn-secondary" routerLink="/map">Về bản đồ</a></div></div>
+    } @else if (parkingLot(); as lot) {
+      <button class="change-lot" type="button" (click)="changeParkingLot()">Quay lại danh sách bãi</button><header class="booking-header"><div><p class="booking-kicker">Đặt chỗ</p><h1>{{ lot.name }}</h1><p>{{ lot.address }}</p></div><div class="booking-availability"><strong>{{ lot.availableSlots }}</strong><span>trên {{ lot.totalSlots }} chỗ còn trống</span></div></header>
+
+      @if (errorMessage()) { <div class="booking-error" role="alert">{{ errorMessage() }}</div> }
+
+      <div class="booking-layout">
+        <main>
+          <section class="booking-section"><div class="section-heading"><span>01</span><div><h2>Chọn tầng</h2><p>Chọn khu vực bạn muốn gửi xe.</p></div></div><div class="floor-tabs">@for (floor of floors(); track floor.id) { <button type="button" [class.active]="selectedFloor()?.id === floor.id" (click)="selectFloor(floor)">{{ floor.floorName }}</button> }</div></section>
+          <section class="booking-section"><div class="section-heading"><span>02</span><div><h2>Chọn chỗ đỗ</h2><p>Màu xanh là chỗ có thể đặt ngay.</p></div></div><div class="slot-legend"><span><i class="available"></i>Còn trống</span><span><i></i>Không khả dụng</span></div><div class="slot-grid">@for (slot of slots(); track slot.id) { <button type="button" [disabled]="slot.status !== 0" [class.selected]="selectedSlot()?.id === slot.id" (click)="selectSlot(slot)"><small>{{ slot.vehicleType === 1 ? 'Xe máy' : 'Ô tô' }}</small><strong>{{ slot.slotName }}</strong></button> } @empty { <p class="slot-empty">Tầng này chưa có chỗ đỗ.</p> }</div></section>
+          <section class="booking-section"><div class="section-heading"><span>03</span><div><h2>Chọn phương tiện</h2><p>Phương tiện sẽ được gắn với lượt đặt chỗ.</p></div></div><div class="vehicle-list">@for (vehicle of vehicles(); track vehicle.id) { <button type="button" [class.active]="selectedVehicle()?.id === vehicle.id" (click)="selectVehicle(vehicle)"><span>{{ vehicle.vehicleType === 3 ? 'Xe máy' : 'Ô tô' }}</span><strong>{{ vehicle.licensePlate }}</strong>@if (vehicle.isDefault) { <small>Mặc định</small> }</button> } @empty { <p>Bạn chưa có phương tiện. Hãy thêm phương tiện trước khi đặt chỗ.</p> }</div></section>
+        </main>
+
+        <aside class="booking-summary"><p class="booking-kicker">Tóm tắt</p><h2>Lượt đặt của bạn</h2><dl><div><dt>Bãi xe</dt><dd>{{ lot.name }}</dd></div><div><dt>Tầng</dt><dd>{{ selectedFloor()?.floorName || 'Chưa chọn' }}</dd></div><div><dt>Chỗ đỗ</dt><dd>{{ selectedSlot()?.slotName || 'Chưa chọn' }}</dd></div><div><dt>Biển số</dt><dd>{{ selectedVehicle()?.licensePlate || 'Chưa chọn' }}</dd></div><div class="price"><dt>Giá từ</dt><dd>{{ money(lot.firstBlockPrice) }}/{{ lot.firstBlockHours }}h</dd></div></dl><button class="btn btn-primary" type="button" [disabled]="isSubmitting() || !selectedSlot() || !selectedVehicle()" (click)="submit()">{{ isSubmitting() ? 'Đang giữ chỗ' : 'Xác nhận đặt chỗ' }}</button><small>Giá thực tế được tính khi bạn trả xe.</small></aside>
+      </div>
+    }
+  </div>
+</section>

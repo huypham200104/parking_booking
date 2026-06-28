@@ -1,0 +1,17 @@
+<section class="stats" aria-label="Thống kê ParkGo">
+  <div class="container">
+    <div class="stats__grid">
+      @for (stat of stats; track stat.label) {
+        <div class="stats__item">
+          <p class="stats__value">
+            {{ stat.value }}
+            @if (stat.suffix) {
+              <span class="stats__suffix">{{ stat.suffix }}</span>
+            }
+          </p>
+          <p class="stats__label">{{ stat.label }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

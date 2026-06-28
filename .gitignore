@@ -8,15 +8,21 @@ x86/
 [Bb]uild/
 [Oo]ut/
 [Pp]ublish/
+artifacts/
 
 # .NET generated files
 *.user
+*.csproj.user
+*.vbproj.user
+*.fsproj.user
 *.rsuser
 *.suo
 *.userosscache
 *.sln.docstates
+*.sln.DotSettings.user
 *.nupkg
 *.snupkg
+*.binlog
 *.dll
 *.exe
 *.pdb
@@ -50,17 +56,28 @@ desktop.ini
 .env
 .env.*
 !.env.example
+*.env
+*.env.*
+!*.env.example
 *.local
 *.local.*
 secrets.json
+local.settings.json
 appsettings.Local.json
 appsettings.*.Local.json
+appsettings.*.json
+!appsettings.json
+!appsettings.example.json
 appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 appsettings.*.secrets.json
 appsettings.*.Secrets.json
 **/Properties/launchSettings.json
+*.secret
+*.secrets
+*.secret.*
+*.secrets.*
 *.key
 *.pem
 *.pfx
@@ -84,6 +101,14 @@ appsettings.*.Secrets.json
 *.log
 logs/
 RedisData/
+packages/
+.nuget/packages/
+
+# Docker local overrides
+docker-compose.override.yml
+docker-compose.*.override.yml
+compose.override.yml
+compose.*.override.yml
 
 # API clients and local request data
 *.http.env.json
@@ -99,6 +124,7 @@ dist/
 .npm/
 .yarn/
 .pnp.*
+.pnpm-store/
 coverage-final.json
 .dart_tool/
 .flutter-plugins
@@ -117,3 +143,7 @@ tmp/
 temp/
 .tmp/
 .temp/
+
+# Agent files
+.agents/
+.codex/

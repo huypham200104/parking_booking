@@ -1,0 +1,89 @@
+<section class="history-page" aria-labelledby="history-title">
+  <div class="history-shell container">
+    <header class="history-header">
+      <div class="history-header__copy">
+        <p class="history-kicker">Hoạt động của bạn</p>
+        <h1 id="history-title">Lịch sử đặt chỗ</h1>
+        <p>Xem lại hành trình, chi phí và trạng thái của từng lượt gửi xe.</p>
+      </div>
+
+      <dl class="history-summary" aria-label="Tổng quan lịch sử">
+        <div>
+          <dt>Tổng lượt</dt>
+          <dd>{{ bookings().length }}</dd>
+        </div>
+        <div>
+          <dt>Hoàn thành</dt>
+          <dd>{{ completedCount() }}</dd>
+        </div>
+        <div class="history-summary__wide">
+          <dt>Tổng chi tiêu</dt>
+          <dd>{{ formatMoney(totalSpent()) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <nav class="history-filters" aria-label="Lọc lịch sử đặt chỗ">
+      @for (item of [
+        { value: 'all', label: 'Tất cả' },
+        { value: 'active', label: 'Đang hoạt động' },
+        { value: 'completed', label: 'Hoàn thành' },
+        { value: 'cancelled', label: 'Đã hủy' }
+      ]; track item.value) {
+        <button type="button" (click)="setFilter($any(item.value))" [class.active]="filter() === item.value">
+          {{ item.label }}
+        </button>
+      }
+    </nav>
+
+    @if (isLoading()) {
+      <div class="history-list" aria-label="Đang tải lịch sử" aria-busy="true">
+        @for (item of [1, 2, 3]; track item) {
+          <div class="history-skeleton">
+            <span></span><span></span><span></span>
+          </div>
+        }
+      </div>
+    } @else if (errorMessage()) {
+      <div class="history-state history-state--error" role="alert">
+        <strong>Chưa thể tải lịch sử</strong>
+        <p>{{ errorMessage() }}</p>
+        <button class="btn btn-primary" type="button" (click)="load()">Thử lại</button>
+      </div>
+    } @else if (filteredBookings().length === 0) {
+      <div class="history-state">
+        <span class="history-state__mark" aria-hidden="true">P</span>
+        <strong>Chưa có lượt đặt chỗ phù hợp</strong>
+        <p>Các lượt gửi xe sẽ xuất hiện tại đây sau khi bạn đặt chỗ.</p>
+        <a class="btn btn-primary" routerLink="/map">Tìm bãi đỗ</a>
+      </div>
+    } @else {
+      <div class="history-list">
+        @for (booking of filteredBookings(); track booking.id) {
+          <article class="history-item">
+            <div class="history-item__rail" aria-hidden="true"><span [class]="statusClass(booking.status)"></span></div>
+
+            <div class="history-item__main">
+              <div class="history-item__heading">
+                <div>
+                  <p>{{ booking.bookingTimestamp | date: 'dd/MM/yyyy, HH:mm' }}</p>
+                  <h2>{{ booking.parkingLotName }}</h2>
+                </div>
+                <span class="history-status" [class]="statusClass(booking.status)">{{ statusLabel(booking.status) }}</span>
+              </div>
+
+              <p class="history-item__address">{{ booking.parkingLotAddress }}</p>
+
+              <dl class="history-item__details">
+                <div><dt>Mã đặt chỗ</dt><dd>{{ booking.bookingCode }}</dd></div>
+                <div><dt>Biển số</dt><dd>{{ booking.licensePlate }}</dd></div>
+                <div><dt>Nhận xe</dt><dd>{{ booking.checkInTimestamp ? (booking.checkInTimestamp | date: 'HH:mm, dd/MM/yyyy') : 'Chưa nhận chỗ' }}</dd></div>
+                <div class="history-item__price"><dt>Chi phí</dt><dd>{{ formatMoney(booking.totalPrice) }}</dd></div>
+              </dl>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</section>

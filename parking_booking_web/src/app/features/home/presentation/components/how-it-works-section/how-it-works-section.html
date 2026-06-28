@@ -1,0 +1,56 @@
+<section class="how" aria-labelledby="how-headline">
+  <div class="container">
+    <div class="how__header">
+      <h2 class="how__headline" id="how-headline">
+        Đặt chỗ trong 3 bước đơn giản
+      </h2>
+      <p class="how__subtext">
+        Từ tìm kiếm đến lúc vào bãi, toàn bộ quy trình chỉ mất vài phút.
+      </p>
+    </div>
+
+    <div class="how__steps">
+      @for (step of steps; track step.number; let last = $last) {
+        <div class="how__step reveal" [class]="'reveal-delay-' + $index">
+          <div class="how__step-number" aria-hidden="true">{{ step.number }}</div>
+          <div class="how__step-icon-wrap">
+            <!-- Inline icon per step -->
+            @if ($index === 0) {
+              <svg class="how__step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            } @else if ($index === 1) {
+              <svg class="how__step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
+            } @else {
+              <svg class="how__step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+            }
+          </div>
+          <h3 class="how__step-title">{{ step.title }}</h3>
+          <p class="how__step-desc">{{ step.description }}</p>
+          <ul class="how__step-bullets">
+            @for (bullet of step.bullets; track bullet) {
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-500)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {{ bullet }}
+              </li>
+            }
+          </ul>
+          @if (!last) {
+            <div class="how__connector" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>

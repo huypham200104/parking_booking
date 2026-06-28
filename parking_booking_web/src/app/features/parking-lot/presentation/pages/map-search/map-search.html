@@ -1,0 +1,62 @@
+<div class="map-container">
+  <button
+    class="map-locate-button"
+    type="button"
+    (click)="moveToUserLocation()"
+    aria-label="Quay lại vị trí hiện tại của tôi"
+    title="Vị trí của tôi"
+  >
+    <span class="map-locate-button__target" aria-hidden="true"></span>
+  </button>
+
+  <aside class="map-panel" [class.map-panel--open]="isListOpen()" aria-label="Bãi xe trong khu vực">
+    <div class="map-panel__header">
+      <div>
+        <p>Danh sách bãi xe</p>
+        <h1>Trong khu vực này</h1>
+      </div>
+      <button
+        class="map-panel__toggle"
+        type="button"
+        (click)="toggleParkingList()"
+        [attr.aria-expanded]="isListOpen()"
+      >
+        {{ isListOpen() ? 'Đóng' : 'Mở' }}
+      </button>
+    </div>
+
+    @if (isListOpen()) {
+      <p class="map-panel__message">{{ locationMessage() }}</p>
+
+      @if (isLoading()) {
+        <div class="map-panel__state">Đang tải dữ liệu bãi xe...</div>
+      }
+
+      <div class="parking-list">
+        @for (lot of parkingLots(); track lot.id) {
+          <article class="parking-list__item">
+            <button class="parking-list__focus" type="button" (click)="focusParkingLot(lot)">
+            <span class="parking-list__top">
+              <strong>{{ lot.name }}</strong>
+              <em>{{ lot.distanceKm === null ? 'N/A' : lot.distanceKm.toFixed(2) + 'km' }}</em>
+            </span>
+            <span class="parking-list__address">{{ lot.address }}</span>
+            <span class="parking-list__meta">
+              <span [class.parking-list__slots--empty]="lot.availableSlots === 0">
+                {{ lot.availableSlots }}/{{ lot.totalSlots }} chỗ trống
+              </span>
+              <span>{{ lot.firstBlockPrice }}đ/{{ lot.firstBlockHours }}h</span>
+            </span>
+            </button>
+            <a class="parking-list__book" [routerLink]="['/booking']" [queryParams]="{ parkingLotId: lot.id }">Đặt chỗ</a>
+          </article>
+        } @empty {
+          @if (!isLoading()) {
+            <div class="map-panel__state">Không có bãi xe trong khung bản đồ hiện tại.</div>
+          }
+        }
+      </div>
+    }
+  </aside>
+  <div id="map"></div>
+</div>

@@ -1,4 +1,4 @@
-@parking_booking_HostAddress = http://localhost:5172
+@parking_booking_HostAddress = http://localhost:5173
 
 GET {{parking_booking_HostAddress}}/weatherforecast/
 Accept: application/json

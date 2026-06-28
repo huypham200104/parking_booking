@@ -1,0 +1,155 @@
+<section class="login-page" aria-labelledby="register-title">
+  <div class="login-page__shell container">
+    <aside class="login-page__story" aria-label="Lợi ích tài khoản ParkGo">
+      <div class="login-page__story-content">
+        <p class="login-page__kicker">ParkGo account</p>
+        <h1 id="register-title" class="login-page__headline">
+          Tạo tài khoản bằng số điện thoại.
+        </h1>
+        <p class="login-page__lede">
+          ParkGo chỉ cần số điện thoại để giữ vé đặt chỗ và đồng bộ lịch sử thanh toán.
+        </p>
+      </div>
+
+      <div class="parking-preview" aria-hidden="true">
+        <div class="parking-preview__top">
+          <div>
+            <span class="parking-preview__label">Tài khoản mới</span>
+            <strong>Số điện thoại</strong>
+          </div>
+          <span class="parking-preview__status">Nhanh</span>
+        </div>
+
+        <div class="register-benefits">
+          <span>QR vào bãi</span>
+          <span>Lưu biển số</span>
+          <span>Thanh toán nhanh</span>
+        </div>
+
+        <div class="parking-preview__ticket">
+          <span>Số mẫu</span>
+          <strong>0901234567</strong>
+        </div>
+      </div>
+    </aside>
+
+    <div class="login-card">
+      <div class="login-card__header">
+        <p class="login-card__eyebrow">Đăng ký</p>
+        <h2>Bắt đầu với ParkGo</h2>
+        <p>Tạo tài khoản bằng số điện thoại, chưa cần email hay mật khẩu.</p>
+      </div>
+
+      <form class="login-form" #registerForm="ngForm" (ngSubmit)="submit(registerForm)" novalidate>
+        @if (!awaitingOtp()) {
+        <button class="quick-login" type="button" (click)="quickFill()">
+          <span>Điền nhanh tài khoản mẫu</span>
+          <strong>0901234567</strong>
+        </button>
+        }
+
+        @if (helperMessage()) {
+          <div class="login-form__hint" role="status">
+            {{ helperMessage() }}
+          </div>
+        }
+
+        @if (errorMessage()) {
+          <div class="login-form__alert" role="alert">
+            <span class="login-form__alert-icon">!</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        @if (!awaitingOtp()) {
+        <label class="field">
+          <span>Họ và tên</span>
+          <input
+            type="text"
+            name="fullName"
+            autocomplete="name"
+            placeholder="Nguyễn Minh Anh"
+            [ngModel]="fullName()"
+            (ngModelChange)="fullName.set($event)"
+            required
+            minlength="2"
+            #fullNameInput="ngModel"
+          />
+          @if (fullNameInput.invalid && fullNameInput.touched) {
+            <small>Vui lòng nhập họ và tên.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Số điện thoại</span>
+          <input
+            type="tel"
+            name="phoneNumber"
+            autocomplete="tel"
+            inputmode="numeric"
+            placeholder="0901234567"
+            [ngModel]="phoneNumber()"
+            (ngModelChange)="phoneNumber.set($event)"
+            required
+            pattern="^0[0-9]{9}$"
+            #phoneInput="ngModel"
+          />
+          @if (phoneInput.invalid && phoneInput.touched) {
+            <small>Vui lòng nhập số điện thoại 10 chữ số.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Biển số xe</span>
+          <input
+            type="text"
+            name="vehiclePlate"
+            autocomplete="off"
+            placeholder="51A-482.10"
+            [ngModel]="vehiclePlate()"
+            (ngModelChange)="vehiclePlate.set($event)"
+          />
+        </label>
+
+        <label class="remember remember--terms">
+          <input
+            type="checkbox"
+            name="acceptTerms"
+            [ngModel]="acceptTerms()"
+            (ngModelChange)="acceptTerms.set($event)"
+            required
+            #termsInput="ngModel"
+          />
+          <span>Tôi đồng ý với điều khoản sử dụng ParkGo</span>
+        </label>
+        @if (termsInput.invalid && termsInput.touched) {
+          <small class="terms-error">Bạn cần đồng ý điều khoản để đăng ký.</small>
+        }
+        } @else {
+          <label class="field">
+            <span>Mã OTP</span>
+            <input type="text" name="otp" inputmode="numeric" autocomplete="one-time-code"
+              placeholder="123456" [ngModel]="otp()" (ngModelChange)="otp.set($event)"
+              required pattern="^[0-9]{4,6}$" #otpInput="ngModel" />
+            @if (otpInput.invalid && otpInput.touched) { <small>OTP phải có từ 4 đến 6 chữ số.</small> }
+          </label>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="editDetails()">Sửa thông tin</button>
+        }
+
+        <button class="btn btn-primary login-form__submit" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="login-form__loader" aria-hidden="true"></span>
+            Đang xử lý
+          } @else {
+            {{ awaitingOtp() ? 'Xác nhận và tạo tài khoản' : 'Gửi mã OTP' }}
+          }
+        </button>
+      </form>
+
+      <p class="login-card__signup">
+        Đã có tài khoản?
+        <a routerLink="/auth/login">Đăng nhập</a>
+      </p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+<section class="testimonials" aria-labelledby="testimonials-headline">
+  <div class="container">
+    <h2 class="testimonials__headline" id="testimonials-headline">
+      Người dùng nói gì về ParkGo
+    </h2>
+
+    <div class="testimonials__grid">
+      @for (t of testimonials; track t.name; let i = $index) {
+        <article class="testimonials__card reveal" [class]="'reveal-delay-' + i" [attr.aria-label]="'Đánh giá từ ' + t.name">
+          <!-- Stars -->
+          <div class="testimonials__stars" aria-label="5 sao">
+            @for (star of [1,2,3,4,5]; track star) {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" aria-hidden="true">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            }
+          </div>
+          <!-- Quote -->
+          <blockquote class="testimonials__quote">
+            &#8220;{{ t.quote }}&#8221;
+          </blockquote>
+          <!-- Attribution -->
+          <footer class="testimonials__attribution">
+            <div class="testimonials__avatar" [style.background-color]="t.color" aria-hidden="true">
+              {{ t.initials }}
+            </div>
+            <div>
+              <p class="testimonials__name">{{ t.name }}</p>
+              <p class="testimonials__role">{{ t.role }}</p>
+            </div>
+          </footer>
+        </article>
+      }
+    </div>
+  </div>
+</section>

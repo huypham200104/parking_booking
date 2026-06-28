@@ -1,0 +1,101 @@
+<section class="features" aria-labelledby="features-headline">
+  <div class="container">
+    <div class="features__header">
+      <h2 class="features__headline" id="features-headline">
+        Mọi thứ bạn cần<br />để đậu xe dễ dàng hơn
+      </h2>
+      <p class="features__subtext">
+        Từ tìm kiếm đến thanh toán, ParkGo đơn giản hoá toàn bộ quy trình đậu xe đô thị.
+      </p>
+    </div>
+
+    <!-- Bento grid: 5 cells with varied sizes -->
+    <div class="features__bento">
+      <!-- Cell 1: Wide – Search (spans 2 cols) -->
+      <div class="features__cell features__cell--wide features__cell--search reveal">
+        <div class="features__cell-icon features__icon--blue">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <h3 class="features__cell-title">{{ features[0].title }}</h3>
+        <p class="features__cell-desc">{{ features[0].description }}</p>
+        <img
+          src="assets/images/features-phone.png"
+          alt="Màn hình điện thoại hiển thị bản đồ tìm kiếm bãi đỗ xe"
+          class="features__cell-img"
+          loading="lazy"
+        />
+      </div>
+
+      <!-- Cell 2: QR -->
+      <div class="features__cell features__cell--qr reveal reveal-delay-1">
+        <div class="features__cell-icon features__icon--green">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/>
+            <rect x="18" y="18" width="3" height="3"/>
+          </svg>
+        </div>
+        <h3 class="features__cell-title">{{ features[1].title }}</h3>
+        <p class="features__cell-desc">{{ features[1].description }}</p>
+        <!-- QR visual -->
+        <div class="features__qr-visual" aria-hidden="true">
+          <div class="features__qr-grid">
+            @for (cell of [1,1,0,1,0,1,0,1,1,0,1,1,0,0,1,1,1,0,1,1,0,1,0,0,1]; track $index) {
+              <div class="features__qr-cell" [class.on]="cell === 1"></div>
+            }
+          </div>
+          <div class="features__qr-scan-line"></div>
+        </div>
+      </div>
+
+      <!-- Cell 3: Real-time -->
+      <div class="features__cell features__cell--realtime reveal reveal-delay-2">
+        <div class="features__cell-icon features__icon--amber">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3 class="features__cell-title">{{ features[2].title }}</h3>
+        <p class="features__cell-desc">{{ features[2].description }}</p>
+        <!-- Mini slot grid visual -->
+        <div class="features__slots" aria-hidden="true">
+          @for (slot of slotStates; track $index) {
+            <div class="features__slot" [class]="'features__slot--' + slot"></div>
+          }
+        </div>
+      </div>
+
+      <!-- Cell 4: Payment – Wide -->
+      <div class="features__cell features__cell--wide features__cell--payment reveal reveal-delay-1">
+        <div class="features__cell-icon features__icon--purple">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <h3 class="features__cell-title">{{ features[3].title }}</h3>
+        <p class="features__cell-desc">{{ features[3].description }}</p>
+        <!-- Payment method logos -->
+        <div class="features__payment-methods" aria-label="Phương thức thanh toán được hỗ trợ">
+          <span class="features__payment-badge">Visa</span>
+          <span class="features__payment-badge">Mastercard</span>
+          <span class="features__payment-badge">MoMo</span>
+          <span class="features__payment-badge">ZaloPay</span>
+          <span class="features__payment-badge">VNPay</span>
+        </div>
+      </div>
+
+      <!-- Cell 5: Booking -->
+      <div class="features__cell features__cell--booking reveal reveal-delay-2">
+        <div class="features__cell-icon features__icon--sky">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <h3 class="features__cell-title">{{ features[4].title }}</h3>
+        <p class="features__cell-desc">{{ features[4].description }}</p>
+      </div>
+    </div>
+  </div>
+</section>

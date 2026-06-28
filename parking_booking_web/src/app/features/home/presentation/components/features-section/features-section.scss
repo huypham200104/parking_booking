@@ -1,0 +1,219 @@
+.features {
+  padding: 5rem 0;
+  background-color: var(--color-bg-app);
+}
+
+.features__header {
+  max-width: 600px;
+  margin-bottom: 3rem;
+}
+
+.features__headline {
+  font-size: clamp(1.875rem, 3.5vw, 2.75rem);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: 0.875rem;
+}
+
+.features__subtext {
+  font-size: 1.0625rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  max-width: 52ch;
+}
+
+/* Bento grid – 3 columns on desktop */
+.features__bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Base cell */
+.features__cell {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    border-color: var(--color-border-dark);
+  }
+}
+
+/* Wide cells span 2 columns */
+.features__cell--wide {
+  @media (min-width: 768px) {
+    grid-column: span 2;
+  }
+}
+
+/* Icon */
+.features__cell-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 0.25rem;
+}
+
+/* Icon color modifiers */
+.features__icon--blue   { background-color: #3b82f6; }
+.features__icon--green  { background-color: #10b981; }
+.features__icon--amber  { background-color: #f59e0b; }
+.features__icon--purple { background-color: #8b5cf6; }
+.features__icon--sky    { background-color: #0ea5e9; }
+
+.features__cell-title {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.features__cell-desc {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 44ch;
+}
+
+/* Search cell image */
+.features__cell-img {
+  margin-top: auto;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+.features__cell--search {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.08) 0%, var(--color-bg-surface) 100%);
+}
+
+/* QR visual */
+.features__qr-visual {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-top: auto;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.features__qr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.features__qr-cell {
+  background-color: #e2e8f0;
+  border-radius: 1px;
+
+  &.on {
+    background-color: #0f172a;
+  }
+}
+
+.features__qr-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  top: 10%;
+  animation: scan 2.5s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0% { top: 10%; opacity: 1; }
+  90% { top: 90%; opacity: 1; }
+  100% { top: 90%; opacity: 0; }
+}
+
+/* Real-time cell: slot grid */
+.features__cell--realtime {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.08) 0%, var(--color-bg-surface) 100%);
+}
+
+.features__slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: auto;
+}
+
+.features__slot {
+  height: 22px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+
+  &--available {
+    background-color: var(--color-status-available-bg);
+    border-color: var(--color-status-available-border);
+  }
+
+  &--occupied {
+    background-color: var(--color-status-occupied-bg);
+    border-color: var(--color-status-occupied-border);
+  }
+
+  &--pending {
+    background-color: var(--color-status-pending-bg);
+    border-color: var(--color-status-pending-border);
+  }
+}
+
+/* Payment cell */
+.features__cell--payment {
+  background: linear-gradient(145deg, rgba(139, 92, 246, 0.08) 0%, var(--color-bg-surface) 100%);
+}
+
+.features__payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.features__payment-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-dark);
+  letter-spacing: 0.02em;
+}
+
+/* Booking cell */
+.features__cell--booking {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.08) 0%, var(--color-bg-surface) 100%);
+}
