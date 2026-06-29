@@ -1,0 +1,179 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Quản lý bãi đỗ xe</h1>
+      <p class="page-subtitle">Quản lý và giám sát tất cả các bãi đỗ xe trong hệ thống ParkGo.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <i class="ph ph-plus"></i>
+        <span>Thêm bãi đỗ xe</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="data-card">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="error-state" *ngIf="error">
+      <i class="ph ph-warning-circle"></i>
+      <p>{{ error }}</p>
+      <button class="btn btn-outline" (click)="loadData()">Thử lại</button>
+    </div>
+
+    <div class="table-container" *ngIf="!error">
+      <table class="premium-table">
+        <thead>
+          <tr>
+            <th>Thông tin bãi đỗ</th>
+            <th>Vị trí</th>
+            <th class="text-center">Số chỗ</th>
+            <th class="text-center">Đánh giá</th>
+            <th>Trạng thái</th>
+            <th class="text-right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let lot of parkingLots" class="table-row">
+            <td>
+              <div class="main-info">
+                <div class="avatar-box bg-gradient-blue">
+                  {{ lot.name.charAt(0) }}
+                </div>
+                <div class="info-text">
+                  <span class="title">{{ lot.name }}</span>
+                  <span class="subtitle">ID: {{ lot.id.substring(0, 8) }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="location-info">
+                <i class="ph ph-map-pin"></i>
+                <span class="address">{{ lot.address }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <div class="slots-badge">
+                <span class="available">{{ lot.availableSlots }}</span>
+                <span class="total">/ {{ lot.totalSlots }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <div class="rating-info">
+                <i class="ph-fill ph-star text-yellow"></i>
+                <span>{{ lot.averageRating | number:'1.1-1' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="statusClass(lot.status)">
+                {{ statusLabel(lot.status) }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="action-buttons">
+                <button class="btn-icon" title="Xem chi tiết" (click)="openViewModal(lot)">
+                  <i class="ph ph-eye"></i>
+                </button>
+                <button class="btn-icon" title="Chỉnh sửa" (click)="openEditModal(lot)">
+                  <i class="ph ph-pencil-simple"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="parkingLots.length === 0 && !loading">
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="ph ph-folder-open"></i>
+                <p>Chưa có bãi đỗ xe nào.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="totalPages > 1 && !error">
+      <span class="total-text">Tổng cộng: <strong>{{ totalCount }}</strong> bãi đỗ xe</span>
+      <div class="pagination-controls">
+        <button class="btn-page" [disabled]="pageIndex === 1" (click)="prevPage()">
+          <i class="ph ph-caret-left"></i>
+        </button>
+        
+        <button *ngFor="let p of getPages()" class="btn-page num" [class.active]="p === pageIndex" (click)="goToPage(p)">
+          {{ p }}
+        </button>
+        
+        <button class="btn-page" [disabled]="pageIndex === totalPages" (click)="nextPage()">
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">{{ modalMode === 'create' ? 'Thêm bãi đỗ xe' : (modalMode === 'edit' ? 'Chỉnh sửa bãi đỗ xe' : 'Chi tiết bãi đỗ xe') }}</h2>
+      <button class="btn-icon" (click)="closeModal()"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="modal-body" *ngIf="modalForm">
+      <div class="form-group">
+        <label>Tên bãi đỗ</label>
+        <input type="text" [(ngModel)]="modalForm.name" [readonly]="modalMode === 'view'" class="form-control" />
+      </div>
+      <div class="form-group" *ngIf="modalMode === 'create'">
+        <label>Chủ bãi đỗ (Owner ID)</label>
+        <input type="text" [(ngModel)]="modalForm.ownerId" class="form-control" placeholder="Ví dụ: e5a54992-..." />
+      </div>
+      <div class="form-group">
+        <label>Địa chỉ</label>
+        <input type="text" [(ngModel)]="modalForm.address" [readonly]="modalMode === 'view'" class="form-control" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vĩ độ (Lat)</label>
+          <input type="number" [(ngModel)]="modalForm.latitude" [readonly]="modalMode === 'view'" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Kinh độ (Lng)</label>
+          <input type="number" [(ngModel)]="modalForm.longitude" [readonly]="modalMode === 'view'" class="form-control" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Giá block đầu (VNĐ)</label>
+          <input type="number" [(ngModel)]="modalForm.firstBlockPrice" [readonly]="modalMode === 'view'" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Số giờ block đầu</label>
+          <input type="number" [(ngModel)]="modalForm.firstBlockHours" [readonly]="modalMode === 'view'" class="form-control" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>SĐT Liên hệ</label>
+        <input type="text" [(ngModel)]="modalForm.contactPhone" [readonly]="modalMode === 'view'" class="form-control" />
+      </div>
+      <div class="form-group checkbox-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="modalForm.is24_7" [disabled]="modalMode === 'view'" />
+          Mở cửa 24/7
+        </label>
+      </div>
+      <div class="modal-error" *ngIf="modalError">
+        <i class="ph ph-warning-circle"></i>
+        <span>{{ modalError }}</span>
+      </div>
+    </div>
+    <div class="modal-footer" *ngIf="modalMode !== 'view'">
+      <button class="btn btn-outline" (click)="closeModal()">Hủy</button>
+      <button class="btn btn-primary" (click)="saveModal()" [disabled]="modalSaving">
+        <span *ngIf="!modalSaving">Lưu thông tin</span>
+        <span *ngIf="modalSaving" class="spinner-small"></span>
+      </button>
+    </div>
+  </div>
+</div>

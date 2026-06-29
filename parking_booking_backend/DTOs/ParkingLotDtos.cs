@@ -20,6 +20,16 @@ public sealed record ParkingLotSummaryResponse(
     ParkingLotStatus Status,
     double? DistanceKm);
 
+public sealed record MapBoundsResponse(
+    double MinLat,
+    double MinLng,
+    double MaxLat,
+    double MaxLng);
+
+public sealed record ParkingLotSearchResponse(
+    IReadOnlyCollection<ParkingLotSummaryResponse> Results,
+    MapBoundsResponse? MapBounds);
+
 public sealed record ParkingLotDetailResponse(
     Guid Id,
     Guid OwnerId,
@@ -62,3 +72,39 @@ public sealed record CrowdsourceReportRequest(
     [Range(-180, 180)] double CurrentLng);
 
 public sealed record AddParkingLotStaffRequest([Required] Guid UserId);
+
+public sealed record AddParkingLotStaffByPhoneRequest([Required, StringLength(20)] string PhoneNumber);
+
+public sealed record CreateParkingLotStaffRequest(
+    [Required, StringLength(200, MinimumLength = 2)] string FullName,
+    [Required, StringLength(20)] string PhoneNumber);
+
+public sealed record OwnerStaffAssignmentResponse(
+    Guid UserId,
+    string FullName,
+    string PhoneNumber,
+    bool IsLocked,
+    DateTime CreatedAt,
+    Guid ParkingLotId,
+    string ParkingLotName);
+
+public sealed record CreateParkingLotRequest(
+    [Required, StringLength(100, MinimumLength = 3)] string Name,
+    [Required, StringLength(200, MinimumLength = 5)] string Address,
+    Guid? OwnerId,
+    [Range(-90, 90)] double Latitude,
+    [Range(-180, 180)] double Longitude,
+    [Range(0, 1000000)] decimal FirstBlockPrice,
+    [Range(1, 24)] int FirstBlockHours,
+    bool Is24_7,
+    [StringLength(20)] string ContactPhone);
+
+public sealed record UpdateParkingLotRequest(
+    [Required, StringLength(100, MinimumLength = 3)] string Name,
+    [Required, StringLength(200, MinimumLength = 5)] string Address,
+    [Range(-90, 90)] double Latitude,
+    [Range(-180, 180)] double Longitude,
+    [Range(0, 1000000)] decimal FirstBlockPrice,
+    [Range(1, 24)] int FirstBlockHours,
+    bool Is24_7,
+    [StringLength(20)] string ContactPhone);

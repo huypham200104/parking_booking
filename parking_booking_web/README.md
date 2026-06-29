@@ -1,59 +1,46 @@
-# ParkingBookingWeb
+# ParkGo - Hệ thống Đặt chỗ Bãi Đỗ Xe (Web CMS)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.17.
+Đây là mã nguồn Frontend (Web CMS) cho dự án ParkGo - nền tảng kết nối tài xế với các bãi đỗ xe thông minh. Dự án được xây dựng dựa trên [Angular](https://angular.dev/) và cung cấp giao diện cho 4 nhóm người dùng: **Admin**, **Owner (Chủ bãi)**, **Driver (Tài xế)** và **Guard (Bảo vệ)**.
 
-## Development server
+## Công nghệ sử dụng
+- **Core:** Angular (Standalone Components), TypeScript.
+- **Style:** SCSS, CSS Variables (Custom Design System, không dùng Bootstrap/Tailwind để tối ưu dung lượng).
+- **Bản đồ:** Leaflet.js (Hiển thị và tương tác với sơ đồ bãi đỗ xe).
+- **State Management:** Angular Signals & RxJS.
 
-To start a local development server, run:
+## Cấu trúc thư mục (`/src/app`)
+- `/core`: Chứa các interceptors, guards, utils dùng chung toàn hệ thống.
+- `/features`: Chứa logic nghiệp vụ chia theo tính năng (Admin, Owner, Users, Booking, Wallet,...). Mỗi feature tuân theo kiến trúc Domain-Driven Design (Presentation, Application, Domain, Data).
+- `/shell`: Chứa cấu trúc Layout chính (Navbar, Sidebar, Footer, Layout component).
 
+## Hướng dẫn Cài đặt & Khởi chạy
+
+### 1. Cài đặt thư viện
+Yêu cầu bạn đã cài đặt Node.js (phiên bản khuyến nghị >= 18). Mở terminal tại thư mục `parking_booking_web` và chạy:
 ```bash
-ng serve
+npm install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### 2. Cấu hình kết nối Backend (Proxy)
+Dự án sử dụng file `proxy.conf.json` để điều hướng các request API từ frontend sang backend .NET.
+Mặc định frontend chạy ở `http://localhost:4200` và chuyển tiếp `/api/*` sang `http://localhost:5242`.
+*Đảm bảo Backend (.NET) của bạn đang chạy ở port 5242 trước khi test gọi API.*
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+### 3. Chạy môi trường Development
 ```bash
-ng generate component component-name
+npm start
 ```
+(Lệnh này tương đương với `ng serve --proxy-config proxy.conf.json`). Sau khi khởi chạy thành công, truy cập `http://localhost:4200` trên trình duyệt. App sẽ tự động tải lại (hot-reload) khi có file thay đổi.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+## Xây dựng bản Production (Build)
+Để biên dịch dự án ra các file tĩnh chuẩn bị cho việc deploy (ví dụ lên Vercel, Netlify hoặc IIS):
 ```bash
-ng generate --help
+npm run build
 ```
+Mã nguồn đã biên dịch sẽ nằm trong thư mục `dist/parking_booking_web/`.
 
-## Building
-
-To build the project run:
-
+## Lệnh tạo Code tự động (Scaffolding)
+Sử dụng Angular CLI để tạo nhanh các component:
 ```bash
-ng build
+ng generate component path/to/component-name
 ```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

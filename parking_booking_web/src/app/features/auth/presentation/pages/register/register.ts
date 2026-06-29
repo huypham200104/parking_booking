@@ -7,6 +7,7 @@ import { ApiError } from '../../../../../core/infrastructure/http/api-client.ser
 import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
 import { RequestOtpUseCase } from '../../../application/use-cases/request-otp.use-case';
 import { VerifyOtpUseCase } from '../../../application/use-cases/verify-otp.use-case';
+import { AuthSessionService } from '../../../data/storage/auth-session.service';
 
 @Component({
   selector: 'app-register',
@@ -20,6 +21,7 @@ export class RegisterComponent {
   private readonly verifyOtp = inject(VerifyOtpUseCase);
   private readonly api = inject(ParkingBookingApiService);
   private readonly router = inject(Router);
+  private readonly sessions = inject(AuthSessionService);
   readonly fullName = signal('');
   readonly phoneNumber = signal('');
   readonly vehiclePlate = signal('');
@@ -29,6 +31,7 @@ export class RegisterComponent {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
   readonly helperMessage = signal('');
+  readonly lockedMessage = signal('');
 
   quickFill(): void {
     this.fullName.set('Nguyễn Minh Anh');
@@ -72,7 +75,17 @@ export class RegisterComponent {
       finalize(() => this.isSubmitting.set(false)),
     ).subscribe({
       next: () => void this.router.navigateByUrl('/map'),
-      error: (error: ApiError) => this.errorMessage.set(error.message),
+      error: (error: ApiError) => {
+        if (error.status === 403) {
+          this.sessions.clear();
+          this.otp.set('');
+          this.awaitingOtp.set(false);
+          this.lockedMessage.set(error.message || 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.');
+          return;
+        }
+        this.errorMessage.set(error.message);
+      },
     });
   }
+  closeLockedDialog(): void { this.lockedMessage.set(''); }
 }

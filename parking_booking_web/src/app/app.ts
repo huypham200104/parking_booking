@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { AccountFacade } from './features/account/application/account.facade';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,12 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {}
+export class App {
+  readonly account = inject(AccountFacade);
+  readonly router = inject(Router);
+
+  closeLogoutModal(): void {
+    this.account.showLogoutModal.set(false);
+    void this.router.navigateByUrl('/');
+  }
+}

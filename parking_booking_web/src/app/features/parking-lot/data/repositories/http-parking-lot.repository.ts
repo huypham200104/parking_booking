@@ -1,7 +1,7 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../../../core/infrastructure/http/api-client.service';
-import { ParkingBounds, ParkingLotSummary } from '../../domain/entities/parking-lot';
+import { ParkingBounds, ParkingLotSearchResult, ParkingLotSummary } from '../../domain/entities/parking-lot';
 import { ParkingLotRepository } from '../../domain/repositories/parking-lot.repository';
 
 @Injectable({ providedIn: 'root' })
@@ -29,5 +29,10 @@ export class HttpParkingLotRepository extends ParkingLotRepository {
     }
 
     return this.api.get<ParkingLotSummary[]>('/parking-lots/bounds', params);
+  }
+
+  search(keyword: string) {
+    const params = new HttpParams().set('keyword', keyword);
+    return this.api.get<ParkingLotSearchResult>('/parking-lots/search', params);
   }
 }

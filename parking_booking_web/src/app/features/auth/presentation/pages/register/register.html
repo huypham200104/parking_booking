@@ -152,4 +152,12 @@
       </p>
     </div>
   </div>
+  @if (lockedMessage()) {
+    <div class="account-lock-dialog" role="presentation">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="register-lock-title">
+        <span aria-hidden="true">!</span><h2 id="register-lock-title">Tài khoản đã bị khóa</h2><p>{{ lockedMessage() }}</p>
+        <button class="btn btn-primary" type="button" (click)="closeLockedDialog()">Quay lại</button>
+      </section>
+    </div>
+  }
 </section>

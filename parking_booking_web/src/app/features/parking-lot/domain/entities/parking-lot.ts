@@ -9,3 +9,12 @@ export interface ParkingBounds {
   minLat: number; maxLat: number; minLng: number; maxLng: number;
   userLat?: number; userLng?: number;
 }
+
+export interface MapBounds {
+  minLat: number; minLng: number; maxLat: number; maxLng: number;
+}
+
+export interface ParkingLotSearchResult {
+  results: ParkingLotSummary[];
+  mapBounds: MapBounds | null;
+}

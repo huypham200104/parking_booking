@@ -1,0 +1,80 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Cài đặt hệ thống</h1>
+      <p class="page-subtitle">Quản lý thông tin cá nhân và cấu hình bảo mật.</p>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <!-- Left Column: Personal Info -->
+    <div class="settings-card">
+      <div class="card-header">
+        <h2 class="card-title">Thông tin cá nhân</h2>
+        <p class="card-subtitle">Cập nhật họ tên và số điện thoại liên hệ của bạn.</p>
+      </div>
+
+      <div class="card-body">
+        <div class="loading-overlay" *ngIf="loading">
+          <div class="spinner"></div>
+        </div>
+
+        <form (ngSubmit)="saveSettings()" *ngIf="!loading">
+          <div class="form-group">
+            <label>Họ và tên</label>
+            <input type="text" [(ngModel)]="formData.fullName" name="fullName" class="form-control" placeholder="Nhập họ và tên..." />
+          </div>
+
+          <div class="form-group">
+            <label>Số điện thoại</label>
+            <input type="text" [(ngModel)]="formData.phoneNumber" name="phoneNumber" class="form-control" disabled title="Số điện thoại không thể thay đổi do dùng để đăng nhập" />
+          </div>
+
+          <div class="alert alert-success" *ngIf="successMsg">
+            <i class="ph ph-check-circle"></i>
+            <span>{{ successMsg }}</span>
+          </div>
+
+          <div class="alert alert-error" *ngIf="error">
+            <i class="ph ph-warning-circle"></i>
+            <span>{{ error }}</span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="saving">
+              <span *ngIf="!saving">Lưu thông tin</span>
+              <span *ngIf="saving" class="spinner-small"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Column: Security -->
+    <div class="settings-card">
+      <div class="card-header">
+        <h2 class="card-title">Bảo mật & Đăng nhập</h2>
+        <p class="card-subtitle">Quản lý mật khẩu và phương thức xác thực.</p>
+      </div>
+      
+      <div class="card-body">
+        <div class="security-info">
+          <div class="info-icon">
+            <i class="ph ph-shield-check text-emerald"></i>
+          </div>
+          <div class="info-text">
+            <h4>Xác thực OTP qua điện thoại</h4>
+            <p>Hệ thống hiện tại đang sử dụng mã xác thực một lần (OTP) gửi qua số điện thoại để đăng nhập, do đó bạn không cần phải thay đổi hoặc ghi nhớ mật khẩu.</p>
+          </div>
+        </div>
+
+        <div class="security-action">
+          <button class="btn btn-outline" disabled title="Tính năng khóa vì đang dùng OTP">
+            <i class="ph ph-lock-key"></i>
+            <span>Đổi mật khẩu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

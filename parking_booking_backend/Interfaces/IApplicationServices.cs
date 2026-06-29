@@ -8,11 +8,31 @@ public interface IParkingLotService
 
     Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetInBoundsAsync(ParkingLotsInBoundsQuery query, CancellationToken cancellationToken);
 
+    Task<ParkingLotSearchResponse> SearchAsync(string keyword, CancellationToken cancellationToken);
+
     Task<ParkingLotDetailResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetAssignedToCurrentStaffAsync(CancellationToken cancellationToken);
 
     Task ReportAsync(Guid parkingLotId, CrowdsourceReportRequest request, CancellationToken cancellationToken);
 
     Task AddStaffAsync(Guid parkingLotId, AddParkingLotStaffRequest request, CancellationToken cancellationToken);
+
+    Task AddStaffByPhoneAsync(Guid parkingLotId, AddParkingLotStaffByPhoneRequest request, CancellationToken cancellationToken);
+
+    Task CreateStaffAsync(Guid parkingLotId, CreateParkingLotStaffRequest request, CancellationToken cancellationToken);
+
+    Task RemoveStaffAsync(Guid parkingLotId, Guid userId, CancellationToken cancellationToken);
+
+    Task<PaginationResponse<ParkingLotSummaryResponse>> GetAllAdminAsync(int pageIndex, int pageSize, string? keyword, CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetOwnedByMeAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<OwnerStaffAssignmentResponse>> GetMyStaffAsync(CancellationToken cancellationToken);
+
+    Task<ParkingLotDetailResponse> CreateAsync(CreateParkingLotRequest request, CancellationToken cancellationToken);
+
+    Task<ParkingLotDetailResponse> UpdateAsync(Guid id, UpdateParkingLotRequest request, CancellationToken cancellationToken);
 }
 
 public interface ILayoutService
@@ -32,6 +52,14 @@ public interface IBookingService
 {
     Task<IReadOnlyCollection<BookingHistoryResponse>> GetMineAsync(CancellationToken cancellationToken);
 
+    Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetRecentCompletedParkingLotsAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<StaffBookingResponse>> GetForCurrentStaffAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<StaffBookingResponse>> GetForOwnerAsync(CancellationToken cancellationToken);
+
+    Task<PaginationResponse<StaffBookingResponse>> GetAllAdminAsync(int pageIndex, int pageSize, CancellationToken cancellationToken);
+
     Task<BookingResponse> CreateAsync(CreateBookingRequest request, CancellationToken cancellationToken);
 
     Task<BookingResponse> CheckInAsync(Guid id, CancellationToken cancellationToken);
@@ -50,6 +78,12 @@ public interface IBookingService
 public interface IUserService
 {
     Task<UserResponse> GetMeAsync(CancellationToken cancellationToken);
+
+    Task<UserResponse> UpdateMeAsync(UpdateCurrentUserRequest request, CancellationToken cancellationToken);
+
+    Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, CancellationToken cancellationToken);
+
+    Task ToggleLockAsync(Guid id, CancellationToken cancellationToken);
 }
 
 public interface IVehicleService
@@ -57,6 +91,19 @@ public interface IVehicleService
     Task<IReadOnlyCollection<VehicleResponse>> GetMineAsync(CancellationToken cancellationToken);
 
     Task<VehicleResponse> CreateAsync(CreateVehicleRequest request, CancellationToken cancellationToken);
+
+    Task<VehicleResponse> UpdateAsync(Guid id, UpdateVehicleRequest request, CancellationToken cancellationToken);
+
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken);
+}
+
+public interface IVoucherService
+{
+    Task<IReadOnlyCollection<VoucherResponse>> GetValidVouchersAsync(CancellationToken cancellationToken);
+
+    Task<VoucherResponse> CreateAsync(CreateVoucherRequest request, CancellationToken cancellationToken);
+
+    Task<VoucherResponse> UpdateAsync(Guid id, UpdateVoucherRequest request, CancellationToken cancellationToken);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }

@@ -70,7 +70,7 @@ namespace parking_booking_backend.Data
                 .IsUnique();
 
             modelBuilder.Entity<ParkingLotStaff>()
-                .HasIndex(s => new { s.UserId, s.ParkingLotId })
+                .HasIndex(s => s.UserId)
                 .IsUnique();
 
             modelBuilder.Entity<ParkingLot>()

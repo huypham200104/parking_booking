@@ -1,0 +1,39 @@
+<section class="owner-page-container">
+  <header class="page-header"><div class="page-header-text"><span>Danh mục vận hành</span><h1>Bãi đỗ của tôi</h1><p>{{ parkingLots.length }} địa điểm thuộc quyền quản lý của tài khoản này.</p></div><button class="btn btn-primary" type="button" (click)="openCreate()"><i class="ph ph-plus"></i>Thêm bãi đỗ</button></header>
+  @if (error) { <div class="inline-alert" role="alert">{{ error }} <button type="button" (click)="load()">Thử lại</button></div> }
+  @if (isLoading) { <div class="lot-skeleton">@for (item of [1,2,3]; track item) { <div></div> }</div> }
+  @else {
+    <div class="lot-catalog">
+      @for (lot of parkingLots; track lot.id) {
+        <article class="lot-row">
+          <div class="lot-index">{{ ($index + 1).toString().padStart(2, '0') }}</div>
+          <div class="lot-copy"><div><h2>{{ lot.name }}</h2><span class="status-badge" [class.status-active]="lot.status === 1">{{ lot.status === 1 ? 'Hoạt động' : lot.status === 0 ? 'Chờ duyệt' : 'Đình chỉ' }}</span></div><p>{{ lot.address }}</p><small>{{ lot.firstBlockPrice.toLocaleString('vi-VN') }}đ / {{ lot.firstBlockHours }} giờ</small></div>
+          <div class="lot-capacity"><strong>{{ lot.availableSlots }}</strong><span>/ {{ lot.totalSlots }} chỗ trống</span></div>
+          <div class="lot-actions"><button class="edit-button edit-button--primary" type="button" (click)="openLayout(lot)"><i class="ph ph-squares-four"></i>Tầng & chỗ</button><button class="edit-button" type="button" (click)="openEdit(lot.id)"><i class="ph ph-pencil-simple"></i>Sửa thông tin</button></div>
+        </article>
+      } @empty { <div class="empty-state"><i class="ph ph-map-trifold"></i><h2>Chưa có bãi đỗ</h2><p>Tạo địa điểm đầu tiên để bắt đầu cấu hình tầng và chỗ đỗ.</p><button class="btn btn-primary" type="button" (click)="openCreate()">Thêm bãi đỗ</button></div> }
+    </div>
+  }
+</section>
+
+@if (isFormOpen) {
+  <div class="owner-modal" (click)="closeForm()"><form class="owner-dialog" (ngSubmit)="save()" (click)="$event.stopPropagation()">
+    <header><div><small>{{ editingId ? 'Cập nhật địa điểm' : 'Địa điểm mới' }}</small><h2>{{ editingId ? 'Sửa bãi đỗ' : 'Thêm bãi đỗ' }}</h2></div><button type="button" (click)="closeForm()" aria-label="Đóng">×</button></header>
+    <div class="form-grid"><label class="wide"><span>Tên bãi đỗ</span><input name="name" required minlength="3" [(ngModel)]="form.name"></label><label class="wide"><span>Địa chỉ</span><input name="address" required minlength="5" [(ngModel)]="form.address"></label><label><span>Vĩ độ</span><input name="latitude" type="number" step="any" [(ngModel)]="form.latitude"></label><label><span>Kinh độ</span><input name="longitude" type="number" step="any" [(ngModel)]="form.longitude"></label><label><span>Giá block đầu</span><input name="price" type="number" min="0" [(ngModel)]="form.firstBlockPrice"></label><label><span>Số giờ block đầu</span><input name="hours" type="number" min="1" max="24" [(ngModel)]="form.firstBlockHours"></label><label class="wide"><span>Điện thoại liên hệ</span><input name="phone" [(ngModel)]="form.contactPhone"></label><label class="check wide"><input name="allDay" type="checkbox" [(ngModel)]="form.is24_7"><span>Hoạt động 24/7</span></label></div>
+    <footer><button class="btn btn-secondary" type="button" (click)="closeForm()">Hủy</button><button class="btn btn-primary" type="submit" [disabled]="isSaving">{{ isSaving ? 'Đang lưu...' : 'Lưu bãi đỗ' }}</button></footer>
+  </form></div>
+}
+
+@if (isLayoutOpen && layoutLot) {
+  <div class="owner-modal" (click)="closeLayout()"><section class="owner-dialog layout-dialog" (click)="$event.stopPropagation()">
+    <header><div><small>Cấu trúc bãi xe</small><h2>{{ layoutLot.name }}</h2></div><button type="button" (click)="closeLayout()" aria-label="Đóng">×</button></header>
+    <div class="floor-create"><input [(ngModel)]="newFloorName" placeholder="Tên tầng mới, ví dụ: Tầng 2"><button class="btn btn-primary" type="button" (click)="createFloor()" [disabled]="isLayoutSaving || !newFloorName.trim()">Thêm tầng</button></div>
+    <nav class="floor-tabs" aria-label="Danh sách tầng">@for (floor of floors; track floor.id) { <button type="button" [class.active]="selectedFloor?.id === floor.id" (click)="selectFloor(floor)">{{ floor.floorName }}</button> }</nav>
+    @if (selectedFloor) {
+      <div class="capacity-editor"><div><span>Số chỗ tại {{ selectedFloor.floorName }}</span><strong>{{ slots.length }} chỗ hiện có</strong></div><label><span>Số lượng mong muốn</span><input type="number" min="0" max="500" [(ngModel)]="slotCount"></label><button class="btn btn-primary" type="button" (click)="saveSlotCount()" [disabled]="isLayoutSaving">{{ isLayoutSaving ? 'Đang lưu...' : 'Lưu cấu hình tầng' }}</button></div>
+      <div class="slot-legend"><span><i class="available"></i>Còn trống</span><span><i class="occupied"></i>Đang có xe</span><span><i class="maintenance"></i>Bảo trì</span></div>
+      <div class="slot-preview">@for (slot of slots; track slot.id) { <button type="button" [attr.data-status]="slot.status" [disabled]="slot.status === 1" (click)="toggleSlot(slot)"><strong>{{ slot.slotName }}</strong><small>{{ slotStatusLabel(slot) }}</small></button> } @empty { <p>Tầng này chưa có chỗ đỗ.</p> }</div>
+      <p class="slot-help">Bấm vào chỗ trống hoặc bảo trì để chuyển trạng thái. Chỗ đang có xe chỉ được mở lại sau khi check-out.</p>
+    } @else if (!isLayoutLoading) { <div class="empty-state"><p>Hãy thêm tầng đầu tiên cho bãi xe.</p></div> }
+  </section></div>
+}

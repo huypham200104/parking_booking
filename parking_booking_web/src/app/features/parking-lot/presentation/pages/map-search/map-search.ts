@@ -1,8 +1,9 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { GetParkingLotsInBoundsUseCase } from '../../../application/use-cases/get-parking-lots-in-bounds.use-case';
-import { ParkingLotSummary } from '../../../domain/entities/parking-lot';
+import { SearchParkingLotsUseCase } from '../../../application/use-cases/search-parking-lots.use-case';
+import { MapBounds, ParkingLotSummary } from '../../../domain/entities/parking-lot';
 
 interface UserLocation {
   lat: number;
@@ -18,6 +19,8 @@ interface UserLocation {
 })
 export class MapSearch implements OnInit, AfterViewInit {
   private readonly getParkingLotsInBounds = inject(GetParkingLotsInBoundsUseCase);
+  private readonly searchParkingLots = inject(SearchParkingLotsUseCase);
+  private readonly route = inject(ActivatedRoute);
   private readonly fallbackLocation: UserLocation = { lat: 21.0285, lng: 105.8542, source: 'fallback' };
   private map: any;
   private L: any;
@@ -26,6 +29,19 @@ export class MapSearch implements OnInit, AfterViewInit {
   private loadBoundsTimer: number | undefined;
 
   readonly parkingLots = signal<ParkingLotSummary[]>([]);
+  readonly searchInput = signal('');
+  readonly searchQuery = signal('');
+  readonly searchMessage = signal('');
+  readonly filteredParkingLots = computed(() => {
+    const parkingLots = this.parkingLots() ?? [];
+    const queryTokens = this.searchTokens(this.searchQuery());
+    if (!queryTokens.length) return parkingLots;
+    return parkingLots.filter(lot => {
+      const searchable = this.expandVietnameseAliases(this.normalizeSearch(`${lot.name} ${lot.address}`));
+      return queryTokens.every(token => searchable.includes(token));
+    });
+  });
+  readonly selectedParkingLotId = signal<string | null>(null);
   readonly isLoading = signal(true);
   readonly isListOpen = signal(false);
   readonly locationMessage = signal('Đang lấy vị trí của bạn...');
@@ -40,7 +56,13 @@ export class MapSearch implements OnInit, AfterViewInit {
       // Dynamic import to avoid SSR issues with leaflet
       this.L = await import('leaflet');
       this.initMap();
-      this.loadNearbyFromUserLocation();
+      const initialQuery = this.route.snapshot.queryParamMap.get('q')?.trim();
+      if (initialQuery) {
+        this.searchInput.set(initialQuery);
+        this.performSearch();
+      } else {
+        this.loadNearbyFromUserLocation();
+      }
     }
   }
 
@@ -77,12 +99,71 @@ export class MapSearch implements OnInit, AfterViewInit {
     this.isListOpen.update((value) => !value);
   }
 
+  updateSearch(value: string): void {
+    this.searchInput.set(value);
+    if (!value.trim() && this.searchQuery()) this.clearSearch();
+  }
+
+  performSearch(): void {
+    const query = this.searchInput().trim();
+    if (!query) {
+      this.searchMessage.set('Vui lòng nhập tên hoặc địa chỉ bãi đỗ cần tìm.');
+      return;
+    }
+    this.searchQuery.set(query);
+    this.isLoading.set(true);
+    this.isListOpen.set(true);
+    this.searchMessage.set('Đang tìm kiếm bãi đỗ...');
+
+    this.searchParkingLots.execute(query).subscribe({
+      next: (response) => {
+        const results = Array.isArray(response?.results) ? response.results : [];
+        const mapBounds = response?.mapBounds ?? null;
+
+        if (!Array.isArray(response?.results)) {
+          console.error('[MapSearch] Search response does not contain a valid results array.', response);
+        }
+
+        this.parkingLots.set(results);
+        this.renderParkingLots(results);
+        this.isLoading.set(false);
+        this.searchMessage.set(results.length
+          ? `Tìm thấy ${results.length} bãi đỗ phù hợp với “${query}”.`
+          : `Không tìm thấy bãi đỗ phù hợp với “${query}”.`);
+
+        if (mapBounds) this.fitMapToSearchResults(mapBounds);
+      },
+      error: (error) => {
+        console.error('[MapSearch] Failed to search parking lots.', error);
+        this.isLoading.set(false);
+        this.searchMessage.set('Không thể tìm kiếm bãi đỗ. Vui lòng thử lại.');
+      },
+    });
+  }
+
+  openParkingList(): void {
+    this.isListOpen.set(true);
+  }
+
+  clearSearch(): void {
+    this.searchInput.set('');
+    this.searchQuery.set('');
+    this.searchMessage.set('');
+    this.loadVisibleParkingLots();
+  }
+
   focusParkingLot(lot: ParkingLotSummary): void {
     if (!this.map) {
       return;
     }
 
+    this.selectedParkingLotId.set(lot.id);
     this.map.setView([lot.latitude, lot.longitude], 17);
+  }
+
+  googleMapsUrl(lot: ParkingLotSummary): string {
+    const destination = `${lot.latitude},${lot.longitude}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
   }
 
   private loadNearbyFromUserLocation(): void {
@@ -124,12 +205,21 @@ export class MapSearch implements OnInit, AfterViewInit {
   }
 
   private scheduleLoadVisibleParkingLots(): void {
+    if (this.searchQuery()) return;
     window.clearTimeout(this.loadBoundsTimer);
     this.loadBoundsTimer = window.setTimeout(() => this.loadVisibleParkingLots(), 180);
   }
 
+  private fitMapToSearchResults(bounds: MapBounds): void {
+    const leafletBounds = this.L.latLngBounds(
+      [bounds.minLat, bounds.minLng],
+      [bounds.maxLat, bounds.maxLng],
+    );
+    this.map.fitBounds(leafletBounds, { padding: [50, 50], maxZoom: 17 });
+  }
+
   private loadVisibleParkingLots(): void {
-    if (!this.map || !this.markerLayer) {
+    if (!this.map || !this.markerLayer || this.searchQuery()) {
       return;
     }
 
@@ -149,7 +239,7 @@ export class MapSearch implements OnInit, AfterViewInit {
     }).subscribe({
       next: (parkingLots) => {
         this.parkingLots.set(parkingLots);
-        this.renderParkingLots(parkingLots);
+        this.renderParkingLots(this.filteredParkingLots());
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -214,7 +304,10 @@ export class MapSearch implements OnInit, AfterViewInit {
     parkingLots.forEach((lot) => {
       const icon = this.createParkingIcon(lot.availableSlots > 0);
       const marker = this.L.marker([lot.latitude, lot.longitude], { icon }).addTo(this.markerLayer);
-      const distance = lot.distanceKm == null ? '' : `<p><strong>${lot.distanceKm.toFixed(2)}km</strong> từ bạn</p>`;
+      marker.on('click', () => {
+        this.selectedParkingLotId.set(lot.id);
+        this.isListOpen.set(true);
+      });
       const statusHtml = lot.availableSlots > 0
         ? `<span class="popup-status popup-status--available">Còn ${lot.availableSlots}/${lot.totalSlots} chỗ</span>`
         : '<span class="popup-status popup-status--full">Đã hết chỗ</span>';
@@ -223,7 +316,6 @@ export class MapSearch implements OnInit, AfterViewInit {
         <div class="parking-popup">
           <h3>${this.escapeHtml(lot.name)}</h3>
           <p>${this.escapeHtml(lot.address)}</p>
-          ${distance}
           ${statusHtml}
         </div>
       `);
@@ -246,5 +338,36 @@ export class MapSearch implements OnInit, AfterViewInit {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
+  }
+
+  private normalizeSearch(value: string): string {
+    return value.trim().toLocaleLowerCase('vi-VN').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private searchTokens(value: string): string[] {
+    const ignoredWords = new Set(['bai', 'xe', 'do', 'giu', 'ham', 'tai', 'gan', 'duong', 'khu']);
+    const normalized = this.replaceVietnameseAliases(this.normalizeSearch(value));
+    return normalized.split(/\s+/).filter(token => token && !ignoredWords.has(token));
+  }
+
+  private readonly searchAliases: ReadonlyArray<readonly [string, string]> = [
+    ['nha tho duc ba', 'notre dame'],
+    ['dinh doc lap', 'independence palace'],
+    ['nha hat thanh pho', 'opera house'],
+    ['cong vien tao dan', 'tao dan park'],
+    ['cong vien 23 thang 9', 'september 23 park'],
+    ['cho ben thanh', 'ben thanh market'],
+    ['pho di bo nguyen hue', 'nguyen hue walking street'],
+    ['toa nha bitexco', 'bitexco financial tower'],
+  ];
+
+  private replaceVietnameseAliases(value: string): string {
+    return this.searchAliases.reduce((result, [vietnamese, english]) =>
+      result.replaceAll(vietnamese, english), value);
+  }
+
+  private expandVietnameseAliases(value: string): string {
+    return this.searchAliases.reduce((result, [vietnamese, english]) =>
+      result.includes(vietnamese) ? `${result} ${english}` : result, value);
   }
 }

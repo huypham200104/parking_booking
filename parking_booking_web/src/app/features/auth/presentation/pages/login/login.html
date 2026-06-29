@@ -1,6 +1,11 @@
 <section class="login-page" aria-labelledby="login-title">
   <div class="login-page__shell container">
     <aside class="login-page__story" aria-label="Tổng quan đặt chỗ">
+      <div class="login-carousel" aria-hidden="true">
+        @for (image of carouselImages; track image; let index = $index) {
+          <img [src]="image" alt="" [class.active]="activeImage() === index" [attr.loading]="index === 0 ? 'eager' : 'lazy'" />
+        }
+      </div>
       <div class="login-page__story-content">
         <p class="login-page__kicker">ParkGo account</p>
         <h1 id="login-title" class="login-page__headline">
@@ -9,6 +14,12 @@
         <p class="login-page__lede">
           Quản lý vé đặt chỗ, mã QR vào bãi và thanh toán chỉ bằng số điện thoại.
         </p>
+      </div>
+
+      <div class="login-carousel__controls" aria-label="Chọn ảnh nền">
+        @for (image of carouselImages; track image; let index = $index) {
+          <button type="button" [class.active]="activeImage() === index" (click)="showImage(index)" [attr.aria-label]="'Hiển thị ảnh ' + (index + 1)"></button>
+        }
       </div>
 
       <div class="parking-preview" aria-hidden="true">
@@ -102,7 +113,10 @@
               required pattern="^[0-9]{4,6}$" #otpInput="ngModel" />
             @if (otpInput.invalid && otpInput.touched) { <small>OTP phải có từ 4 đến 6 chữ số.</small> }
           </label>
-          <button type="button" class="btn btn-secondary btn-sm" (click)="editPhoneNumber()">Đổi số điện thoại</button>
+          <div class="login-form__otp-actions">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="quickFillOtp()">Nhập nhanh OTP</button>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="editPhoneNumber()">Đổi số điện thoại</button>
+          </div>
         }
 
         <div class="login-form__options">
@@ -135,4 +149,12 @@
       </p>
     </div>
   </div>
+  @if (lockedMessage()) {
+    <div class="account-lock-dialog" role="presentation">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="login-lock-title">
+        <span aria-hidden="true">!</span><h2 id="login-lock-title">Tài khoản đã bị khóa</h2><p>{{ lockedMessage() }}</p>
+        <button class="btn btn-primary" type="button" (click)="closeLockedDialog()">Quay lại đăng nhập</button>
+      </section>
+    </div>
+  }
 </section>

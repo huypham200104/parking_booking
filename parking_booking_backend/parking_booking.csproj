@@ -7,15 +7,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Cung cấp khả năng mã hóa, giải mã và xác thực token JWT (JSON Web Token) cho đăng nhập -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    
+    <!-- Hỗ trợ sinh ra tài liệu API tự động (thường kết hợp với Swagger để test API trực quan) -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    
+    <!-- Cốt lõi của ORM Entity Framework, giúp Backend giao tiếp với cơ sở dữ liệu SQL Server -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
+    
+    <!-- Thư viện chuyên trị kiểu dữ liệu địa lý (Geography/Geometry) để tính khoảng cách bãi đỗ xe -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.9" />
+    
+    <!-- Chứa các công cụ gõ lệnh (CLI) như 'dotnet ef migrations add' hay 'dotnet ef database update' -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    
+    <!-- Thuật toán Distributed Lock (RedLock), khóa giao dịch để chống đặt trùng chỗ (Race condition) -->
     <PackageReference Include="RedLock.net" Version="2.3.2" />
+    
+    <!-- Driver mạnh nhất để Backend kết nối và gửi/nhận dữ liệu siêu tốc độ với Redis Cache -->
     <PackageReference Include="StackExchange.Redis" Version="3.0.7" />
   </ItemGroup>
 

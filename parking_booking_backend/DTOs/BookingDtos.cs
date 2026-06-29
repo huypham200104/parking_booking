@@ -34,8 +34,21 @@ public sealed record BookingHistoryResponse(
     BookingStatus Status,
     decimal? TotalPrice);
 
+public sealed record StaffBookingResponse(
+    Guid Id,
+    string BookingCode,
+    string ParkingLotName,
+    string FloorName,
+    string SlotName,
+    string LicensePlate,
+    DateTime BookingTimestamp,
+    DateTime? CheckInTimestamp,
+    DateTime? CheckOutTimestamp,
+    BookingStatus Status,
+    decimal? TotalPrice);
+
 public sealed record ApplyVoucherRequest([Required] string VoucherCode);
 
-public sealed record CheckOutRequest(bool UseWallet);
+public sealed record CheckOutRequest(bool UseWallet, bool CollectCash = false);
 
-public sealed record CheckOutResponse(decimal TotalPrice, string? VietQrUrl, TransactionStatus Status);
+public sealed record CheckOutResponse(decimal TotalPrice, string? VietQrUrl, TransactionStatus Status, DateTime CheckOutTimestamp);

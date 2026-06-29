@@ -1,0 +1,60 @@
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="ph ph-car-profile text-primary"></i>
+        <span>ParkGo Admin</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+        <i class="ph ph-squares-four"></i>
+        <span>Tổng quan</span>
+      </a>
+      <a routerLink="/admin/parking-lots" routerLinkActive="active" class="nav-item">
+        <i class="ph ph-map-pin"></i>
+        <span>Bãi đỗ xe</span>
+      </a>
+      <a routerLink="/admin/bookings" routerLinkActive="active" class="nav-item">
+        <i class="ph ph-ticket"></i>
+        <span>Lượt đặt chỗ</span>
+      </a>
+      <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
+        <i class="ph ph-users"></i>
+        <span>Người dùng</span>
+      </a>
+      <a routerLink="/admin/vouchers" routerLinkActive="active" class="nav-item"><i class="ph ph-ticket"></i><span>Voucher</span></a>
+      <a routerLink="/admin/settings" routerLinkActive="active" class="nav-item">
+        <i class="ph ph-gear"></i>
+        <span>Cài đặt</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+
+      <button class="nav-item admin-logout" type="button" (click)="logout()">
+        <i class="ph ph-sign-out"></i>
+        <span>Đăng xuất</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <!-- Search box removed as requested -->
+      </div>
+      <div class="topbar-right">
+        <div class="user-profile">
+          <div class="avatar">A</div>
+          <span>Quản trị viên</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

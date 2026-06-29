@@ -2,7 +2,7 @@
   <div class="navbar__inner container">
 
     <!-- Logo -->
-    <a class="navbar__logo" routerLink="/" (click)="closeMobileMenu()" aria-label="ParkGo – Về trang chủ">
+    <a class="navbar__logo" [routerLink]="homeLink()" (click)="closeMobileMenu()" aria-label="ParkGo – Về trang chủ">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" class="navbar__logo-svg" aria-hidden="true">
         <defs>
           <filter id="nav-shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -28,7 +28,7 @@
 
     <!-- Desktop Nav Links -->
     <nav class="navbar__links" aria-label="Navigation chính">
-      @for (link of navLinks; track link.label) {
+      @for (link of navLinks(); track link.label) {
         <a class="navbar__link" [routerLink]="link.path" routerLinkActive="active">
           {{ link.label }}
         </a>
@@ -49,14 +49,19 @@
               <strong>{{ currentUser()?.fullName }}</strong>
               <span>{{ currentUser()?.phoneNumber }}</span>
             </div>
-            <button type="button" role="menuitem" disabled title="Backend chưa có API cập nhật thông tin">Chỉnh sửa thông tin</button>
+            @if (!isStaff()) { <button type="button" role="menuitem" (click)="openEditProfile()">Chỉnh sửa thông tin</button> }
+            @if (!isStaff()) { <a class="account-menu__link" routerLink="/vehicles" role="menuitem">Quản lý phương tiện</a> }
+            @if (!isStaff()) { <a class="account-menu__link" routerLink="/wallet" role="menuitem">Ví của tôi</a> }
+            @if (!isStaff()) { <a class="account-menu__link" routerLink="/vouchers" role="menuitem">Mã ưu đãi</a> }
             <button class="account-menu__logout" type="button" role="menuitem" (click)="logout()">Đăng xuất</button>
           </div>
         </div>
       } @else {
         <a class="btn btn-secondary btn-sm" routerLink="/auth/login">Đăng nhập</a>
       }
-      <a class="btn btn-primary btn-sm" routerLink="/booking" id="nav-cta-book">Đặt chỗ ngay</a>
+      @if (!isStaff()) {
+        <a class="btn btn-primary btn-sm" routerLink="/booking" id="nav-cta-book">Đặt chỗ ngay</a>
+      }
     </div>
 
     <!-- Mobile hamburger -->
@@ -76,7 +81,7 @@
   <!-- Mobile Dropdown Menu -->
   @if (isMobileMenuOpen()) {
     <div class="navbar__mobile-menu" role="navigation" aria-label="Mobile navigation">
-      @for (link of navLinks; track link.label) {
+      @for (link of navLinks(); track link.label) {
         <a class="navbar__mobile-link" [routerLink]="link.path" (click)="closeMobileMenu()">
           {{ link.label }}
         </a>
@@ -84,24 +89,50 @@
       <div class="navbar__mobile-actions">
         @if (isAuthenticated()) {
           <div class="mobile-account"><span class="account-menu__avatar">{{ initials() }}</span><div><strong>{{ currentUser()?.fullName || 'Đang tải...' }}</strong><small>{{ currentUser()?.phoneNumber }}</small></div></div>
-          <button class="mobile-account__edit" type="button" disabled title="Backend chưa có API cập nhật thông tin">Chỉnh sửa thông tin</button>
+          @if (!isStaff()) { <button class="mobile-account__edit" type="button" (click)="openEditProfile()">Chỉnh sửa thông tin</button> }
+          @if (!isStaff()) { <a class="mobile-account__edit" routerLink="/vehicles" (click)="closeMobileMenu()">Quản lý phương tiện</a> }
+          @if (!isStaff()) { <a class="mobile-account__edit" routerLink="/wallet" (click)="closeMobileMenu()">Ví của tôi</a> }
+          @if (!isStaff()) { <a class="mobile-account__edit" routerLink="/vouchers" (click)="closeMobileMenu()">Mã ưu đãi</a> }
           <button class="btn btn-secondary" type="button" (click)="logout()">Đăng xuất</button>
         } @else {
           <a class="btn btn-secondary" routerLink="/auth/login" (click)="closeMobileMenu()">Đăng nhập</a>
         }
-        <a class="btn btn-primary" routerLink="/booking" (click)="closeMobileMenu()" id="nav-mobile-cta-book">Đặt chỗ ngay</a>
+        @if (!isStaff()) {
+          <a class="btn btn-primary" routerLink="/booking" (click)="closeMobileMenu()" id="nav-mobile-cta-book">Đặt chỗ ngay</a>
+        }
       </div>
     </div>
   }
 
-  @if (showLogoutToast()) {
-    <div class="logout-toast" role="status" aria-live="polite">
-      <span aria-hidden="true"></span>
-      <div>
-        <strong>Đăng xuất thành công</strong>
-        <small>Phiên đăng nhập của bạn đã kết thúc.</small>
-      </div>
-      <button type="button" (click)="showLogoutToast.set(false)" aria-label="Đóng thông báo">×</button>
+
+
+  @if (isEditProfileOpen()) {
+    <div class="profile-modal" role="presentation" (click)="closeEditProfile()">
+      <section class="profile-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" (click)="$event.stopPropagation()">
+        <div class="profile-modal__header">
+          <div>
+            <small>Tài khoản cá nhân</small>
+            <h2 id="profile-modal-title">Chỉnh sửa thông tin</h2>
+          </div>
+          <button type="button" (click)="closeEditProfile()" aria-label="Đóng">×</button>
+        </div>
+        <form (ngSubmit)="saveProfile()">
+          <label>
+            <span>Họ và tên</span>
+            <input name="fullName" type="text" minlength="2" maxlength="200" required [(ngModel)]="editFullName" autocomplete="name" />
+          </label>
+          <label>
+            <span>Số điện thoại</span>
+            <input name="phoneNumber" type="tel" maxlength="20" required [(ngModel)]="editPhoneNumber" autocomplete="tel" disabled title="Số điện thoại không thể thay đổi do dùng để đăng nhập" />
+          </label>
+          @if (profileError()) { <p class="profile-modal__message profile-modal__message--error" role="alert">{{ profileError() }}</p> }
+          @if (profileMessage()) { <p class="profile-modal__message profile-modal__message--success" role="status">{{ profileMessage() }}</p> }
+          <div class="profile-modal__actions">
+            <button type="button" class="btn btn-secondary" (click)="closeEditProfile()" [disabled]="isSavingProfile()">Hủy</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSavingProfile()">{{ isSavingProfile() ? 'Đang lưu...' : 'Lưu thay đổi' }}</button>
+          </div>
+        </form>
+      </section>
     </div>
   }
 </header>

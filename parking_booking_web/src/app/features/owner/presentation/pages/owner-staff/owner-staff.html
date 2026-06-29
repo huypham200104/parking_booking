@@ -1,0 +1,13 @@
+<section class="owner-page-container">
+  <header class="page-header"><div><span>Đội ngũ vận hành</span><h1>Nhân sự theo bãi</h1><p>Mỗi dòng thể hiện một phân công cụ thể.</p></div><button class="btn btn-primary" type="button" (click)="openForm()" [disabled]="parkingLots.length === 0"><i class="ph ph-user-plus"></i>Thêm nhân viên</button></header>
+  @if (error) { <div class="inline-alert" role="alert">{{ error }}</div> }
+  @if (isLoading) { <div class="staff-skeleton">@for(item of [1,2,3];track item){<div></div>}</div> }
+  @else {
+    <div class="staff-list">
+      @for (staff of staffMembers; track staff.userId + staff.parkingLotId) {
+        <article class="staff-row"><div class="staff-avatar">{{ staff.fullName.charAt(0).toUpperCase() }}</div><div class="staff-person"><h2>{{ staff.fullName }}</h2><p>{{ staff.phoneNumber }}</p></div><div class="staff-assignment"><span>Phụ trách</span><strong>{{ staff.parkingLotName }}</strong></div><span class="staff-state" [class.locked]="staff.isLocked">{{ staff.isLocked ? 'Bị khóa' : 'Đang hoạt động' }}</span><button class="remove-button" type="button" (click)="removeStaff(staff)" aria-label="Xóa phân công"><i class="ph ph-trash"></i>Xóa</button></article>
+      } @empty { <div class="empty-state"><i class="ph ph-users-three"></i><h2>Chưa có nhân viên</h2><p>Tạo tài khoản nhân viên mới và gắn cố định vào một bãi làm việc.</p><button class="btn btn-primary" type="button" (click)="openForm()" [disabled]="parkingLots.length === 0">Thêm nhân viên</button></div> }
+    </div>
+  }
+</section>
+@if(isFormOpen){<div class="owner-modal" (click)="closeForm()"><form class="owner-dialog" (ngSubmit)="addStaff()" (click)="$event.stopPropagation()"><header><div><small>Tài khoản mới</small><h2>Tạo nhân viên cho bãi</h2></div><button type="button" (click)="closeForm()">×</button></header><label><span>Họ và tên</span><input name="fullName" required minlength="2" [(ngModel)]="fullName"></label><label><span>Số điện thoại đăng nhập</span><input name="phone" required [(ngModel)]="phoneNumber" placeholder="0922..."></label><label><span>Bãi làm việc cố định</span><select name="lot" required [(ngModel)]="parkingLotId">@for(lot of parkingLots;track lot.id){<option [value]="lot.id">{{ lot.name }}</option>}</select></label><footer><button class="btn btn-secondary" type="button" (click)="closeForm()">Hủy</button><button class="btn btn-primary" type="submit" [disabled]="isSaving">{{isSaving?'Đang tạo...':'Tạo nhân viên'}}</button></footer></form></div>}

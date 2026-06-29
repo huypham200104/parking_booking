@@ -59,6 +59,27 @@ public sealed class VehicleService : IVehicleService
         return ToResponse(vehicle);
     }
 
+    public async Task<VehicleResponse> UpdateAsync(Guid id, UpdateVehicleRequest request, CancellationToken cancellationToken)
+    {
+        var vehicle = await _dbContext.Vehicles
+            .FirstOrDefaultAsync(v => v.Id == id && v.UserId == _currentUser.UserId, cancellationToken)
+            ?? throw new ApiException("Vehicle was not found.", StatusCodes.Status404NotFound);
+
+        if (request.IsDefault && !vehicle.IsDefault)
+        {
+            await _dbContext.Vehicles
+                .Where(v => v.UserId == _currentUser.UserId && v.IsDefault)
+                .ExecuteUpdateAsync(updates => updates.SetProperty(v => v.IsDefault, false), cancellationToken);
+        }
+
+        vehicle.VehicleType = request.VehicleType;
+        vehicle.IsDefault = request.IsDefault;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return ToResponse(vehicle);
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(v => v.Id == id && v.UserId == _currentUser.UserId, cancellationToken);

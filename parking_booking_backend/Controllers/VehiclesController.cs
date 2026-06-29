@@ -31,6 +31,13 @@ public sealed class VehiclesController : ControllerBase
         return CreatedAtAction(nameof(GetMine), ApiResponse<VehicleResponse>.Ok(vehicle));
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<VehicleResponse>>> Update(Guid id, UpdateVehicleRequest request, CancellationToken cancellationToken)
+    {
+        var vehicle = await _vehicleService.UpdateAsync(id, request, cancellationToken);
+        return Ok(ApiResponse<VehicleResponse>.Ok(vehicle));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id, CancellationToken cancellationToken)
     {

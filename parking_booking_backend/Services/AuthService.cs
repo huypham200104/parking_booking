@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using parking_booking_backend.Exceptions;
 
 namespace parking_booking_backend.Services;
 
@@ -37,10 +38,18 @@ public sealed class AuthService : IAuthService
             _dbContext.Wallets.Add(new Wallet { UserId = user.Id, Balance = 0 });
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
-        else if (!string.IsNullOrWhiteSpace(request.FullName) && user.FullName != request.FullName.Trim())
+        else 
         {
-            user.FullName = request.FullName.Trim();
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            if (user.IsLocked)
+            {
+                throw new ApiException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.", StatusCodes.Status403Forbidden);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.FullName) && user.FullName != request.FullName.Trim())
+            {
+                user.FullName = request.FullName.Trim();
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
         }
 
         var tokenHandler = new JwtSecurityTokenHandler();

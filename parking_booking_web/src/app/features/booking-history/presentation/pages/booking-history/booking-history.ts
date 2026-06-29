@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { GetBookingHistoryUseCase } from '../../../application/use-cases/get-booking-history.use-case';
+import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
 import { BookingHistory, BookingStatus } from '../../../domain/entities/booking-history';
 
 type HistoryFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -16,10 +17,13 @@ type HistoryFilter = 'all' | 'active' | 'completed' | 'cancelled';
 })
 export class BookingHistoryComponent {
   private readonly getHistory = inject(GetBookingHistoryUseCase);
+  private readonly api = inject(ParkingBookingApiService);
   readonly bookings = signal<BookingHistory[]>([]);
   readonly filter = signal<HistoryFilter>('all');
   readonly isLoading = signal(true);
   readonly errorMessage = signal('');
+  readonly cancellingBookingId = signal<string | null>(null);
+  readonly actionMessage = signal('');
 
   readonly filteredBookings = computed(() => this.bookings().filter(booking => {
     const filter = this.filter();
@@ -44,6 +48,18 @@ export class BookingHistoryComponent {
   }
 
   setFilter(filter: HistoryFilter): void { this.filter.set(filter); }
+  cancelBooking(booking: BookingHistory): void {
+    if (booking.status !== BookingStatus.Pending || !window.confirm(`Hủy lượt đặt chỗ ${booking.bookingCode}?`)) return;
+    this.cancellingBookingId.set(booking.id);
+    this.actionMessage.set('');
+    this.api.cancelBooking(booking.id).pipe(finalize(() => this.cancellingBookingId.set(null))).subscribe({
+      next: () => {
+        this.bookings.update(items => items.map(item => item.id === booking.id ? { ...item, status: BookingStatus.Cancelled } : item));
+        this.actionMessage.set(`Đã hủy lượt đặt chỗ ${booking.bookingCode}.`);
+      },
+      error: error => this.actionMessage.set(error.message ?? 'Không thể hủy lượt đặt chỗ.'),
+    });
+  }
   statusLabel(status: BookingStatus): string {
     return ['Chờ nhận chỗ', 'Đang gửi xe', 'Hoàn thành', 'Đã hủy', 'Không đến'][status] ?? 'Không xác định';
   }

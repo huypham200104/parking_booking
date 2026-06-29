@@ -1,0 +1,125 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Quản lý người dùng</h1>
+      <p class="page-subtitle">Quản lý tài khoản và phân quyền người dùng trong hệ thống.</p>
+    </div>
+    <div class="header-actions">
+      <label class="filter-toggle">
+        <input type="checkbox" [(ngModel)]="filterPenalty" (change)="pageIndex=1; loadUsers()" />
+        <span>Chỉ hiện user có lượt phạt > 0</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="data-card">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="error-state" *ngIf="error">
+      <i class="ph ph-warning-circle"></i>
+      <p>{{ error }}</p>
+      <button class="btn btn-outline" (click)="loadUsers()">Thử lại</button>
+    </div>
+
+    <div class="table-container" *ngIf="!error">
+      <table class="premium-table">
+        <thead>
+          <tr>
+            <th>Người dùng</th>
+            <th>Liên hệ</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Ngày tham gia</th>
+            <th class="text-center">Lượt phạt</th>
+            <th class="text-right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users" class="table-row">
+            <td>
+              <div class="user-info">
+                <div class="avatar">
+                  <div class="avatar-placeholder bg-gradient-purple">
+                    {{ user.fullName ? user.fullName.charAt(0) : 'U' }}
+                  </div>
+                </div>
+                <div class="info-text">
+                  <span class="name">{{ user.fullName || 'Người dùng ẩn danh' }}</span>
+                  <span class="id">ID: {{ user.id.substring(0, 8) }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="contact-info">
+                <i class="ph ph-phone text-muted"></i>
+                <span>{{ user.phoneNumber }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                {{ getRoleName(user.role) }}
+              </span>
+            </td>
+            <td>
+              <div class="status-toggle-wrapper">
+                <span class="status-indicator" [class.locked]="user.isLocked">
+                  <span class="dot"></span>
+                  {{ user.isLocked ? 'Đã khóa' : 'Hoạt động' }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="date-text">{{ user.createdAt | date:'dd/MM/yyyy' }}</span>
+            </td>
+            <td class="text-center">
+              <span class="penalty-badge" 
+                    [class.danger]="user.penaltyCount >= 3" 
+                    [class.warning]="user.penaltyCount > 0 && user.penaltyCount < 3" 
+                    [class.safe]="user.penaltyCount === 0">
+                {{ user.penaltyCount }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="action-buttons">
+                <button class="btn-icon" [title]="user.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'" 
+                        [class.text-red]="!user.isLocked"
+                        [class.text-green]="user.isLocked"
+                        (click)="toggleLock(user)">
+                  <i class="ph" [ngClass]="user.isLocked ? 'ph-lock-key-open' : 'ph-lock-key'"></i>
+                </button>
+                <button class="btn-icon" title="Sửa thông tin">
+                  <i class="ph ph-pencil-simple"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="users.length === 0 && !loading">
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="ph ph-users"></i>
+                <p>Không tìm thấy người dùng nào.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="totalPages > 1 && !error">
+      <span class="total-text">Tổng cộng: <strong>{{ totalCount }}</strong> người dùng</span>
+      <div class="pagination-controls">
+        <button class="btn-page" [disabled]="pageIndex === 1" (click)="prevPage()">
+          <i class="ph ph-caret-left"></i>
+        </button>
+        <button *ngFor="let p of getPages()" class="btn-page num" [class.active]="p === pageIndex" (click)="goToPage(p)">
+          {{ p }}
+        </button>
+        <button class="btn-page" [disabled]="pageIndex === totalPages" (click)="nextPage()">
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

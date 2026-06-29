@@ -9,6 +9,27 @@
     <span class="map-locate-button__target" aria-hidden="true"></span>
   </button>
 
+  <div class="map-search-area">
+    <form class="parking-search map-search-overlay" (submit)="$event.preventDefault(); performSearch()">
+      <span class="parking-search__icon" aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        placeholder="Tìm bãi đỗ theo tên hoặc địa chỉ..."
+        aria-label="Tìm kiếm bãi đỗ xe"
+        [value]="searchInput()"
+        (focus)="openParkingList()"
+        (input)="updateSearch($any($event.target).value)"
+      />
+      @if (searchInput()) {
+        <button class="parking-search__clear" type="button" (click)="clearSearch()" aria-label="Xóa nội dung tìm kiếm">×</button>
+      }
+      <button class="parking-search__submit" type="submit">Tìm kiếm</button>
+    </form>
+    @if (searchMessage()) {
+      <p class="map-search-message" role="status" aria-live="polite">{{ searchMessage() }}</p>
+    }
+  </div>
+
   <aside class="map-panel" [class.map-panel--open]="isListOpen()" aria-label="Bãi xe trong khu vực">
     <div class="map-panel__header">
       <div>
@@ -33,9 +54,17 @@
       }
 
       <div class="parking-list">
-        @for (lot of parkingLots(); track lot.id) {
-          <article class="parking-list__item">
-            <button class="parking-list__focus" type="button" (click)="focusParkingLot(lot)">
+        @for (lot of filteredParkingLots(); track lot.id) {
+          <article
+            class="parking-list__item"
+            [class.parking-list__item--selected]="selectedParkingLotId() === lot.id"
+          >
+            <button
+              class="parking-list__focus"
+              type="button"
+              (click)="focusParkingLot(lot)"
+              [attr.aria-expanded]="selectedParkingLotId() === lot.id"
+            >
             <span class="parking-list__top">
               <strong>{{ lot.name }}</strong>
               <em>{{ lot.distanceKm === null ? 'N/A' : lot.distanceKm.toFixed(2) + 'km' }}</em>
@@ -48,11 +77,32 @@
               <span>{{ lot.firstBlockPrice }}đ/{{ lot.firstBlockHours }}h</span>
             </span>
             </button>
-            <a class="parking-list__book" [routerLink]="['/booking']" [queryParams]="{ parkingLotId: lot.id }">Đặt chỗ</a>
+            @if (selectedParkingLotId() === lot.id) {
+              <div class="parking-list__actions">
+                <a
+                  class="parking-list__action parking-list__action--primary"
+                  [routerLink]="['/booking']"
+                  [queryParams]="{ parkingLotId: lot.id }"
+                >
+                  Đặt chỗ
+                </a>
+                <a
+                  class="parking-list__action parking-list__action--maps"
+                  [href]="googleMapsUrl(lot)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Mở đường đến {{ lot.name }} trên Google Maps"
+                >
+                  Google Maps
+                </a>
+              </div>
+            }
           </article>
         } @empty {
           @if (!isLoading()) {
-            <div class="map-panel__state">Không có bãi xe trong khung bản đồ hiện tại.</div>
+            <div class="map-panel__state">
+              {{ searchQuery() ? 'Không tìm thấy bãi xe phù hợp.' : 'Không có bãi xe trong khung bản đồ hiện tại.' }}
+            </div>
           }
         }
       </div>

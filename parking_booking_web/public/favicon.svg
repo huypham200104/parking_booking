@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="15" fill="#0f172a"/>
+  <g transform="rotate(12 32 31)">
+    <path fill="#3b82f6" fill-rule="evenodd" d="M32 8c12 0 21 9 21 21 0 10-7 20-17 31a5.4 5.4 0 0 1-8 0C18 49 11 39 11 29 11 17 20 8 32 8Zm0 10h-9v27h8v-8h2c7 0 12-4 12-10s-5-9-13-9Zm0 7c3 0 5 1 5 3s-2 3-5 3h-1v-6h1Z"/>
+    <circle cx="32" cy="28" r="3.2" fill="#10b981"/>
+  </g>
+</svg>

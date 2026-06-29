@@ -1,0 +1,53 @@
+<div class="dashboard-wrapper">
+  @if (isLoading) {
+    <div class="bento-card">Đang tải dữ liệu bãi xe của bạn...</div>
+  } @else if (error) {
+    <div class="bento-card">{{ error }}</div>
+  } @else {
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="card-top"><span class="card-label">Tổng doanh thu</span><div class="icon-wrap text-emerald"><i class="ph ph-currency-circle-dollar"></i></div></div>
+        <div class="card-value">{{ totalRevenue.toLocaleString('vi-VN') }} đ</div>
+        <div class="card-trend neutral"><span>Từ các đơn thuộc bãi xe của bạn</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="card-top"><span class="card-label">Xe đang đỗ</span><div class="icon-wrap text-blue"><i class="ph ph-car"></i></div></div>
+        <div class="card-value">{{ parkedVehicles }}</div>
+        <div class="card-trend neutral"><span>Tại {{ parkingLots.length }} bãi xe sở hữu</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="card-top"><span class="card-label">Tổng lượt đặt</span><div class="icon-wrap text-orange"><i class="ph ph-arrows-left-right"></i></div></div>
+        <div class="card-value">{{ totalMovements }}</div>
+        <div class="card-trend neutral"><span>Chỉ tính các bãi thuộc tài khoản hiện tại</span></div>
+      </div>
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-card col-span-2">
+        <div class="card-header"><h3 class="card-title">Bãi xe bạn đang sở hữu</h3><a routerLink="/owner/lots" class="view-all">Quản lý</a></div>
+        <div class="lot-list">
+          @for (lot of parkingLots; track lot.id) {
+            <div class="lot-item">
+              <div class="lot-info"><h4 class="lot-name">{{ lot.name }}</h4><span class="lot-address">{{ lot.address }}</span></div>
+              <div class="lot-stats">
+                <div class="stat-bar"><div class="bar-fill bg-success" [style.width.%]="lot.totalSlots > 0 ? ((lot.totalSlots - lot.availableSlots) / lot.totalSlots * 100) : 0"></div></div>
+                <span class="stat-text">{{ lot.totalSlots - lot.availableSlots }} / {{ lot.totalSlots }} chỗ đang dùng</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="lot-item"><div class="lot-info"><h4 class="lot-name">Bạn chưa sở hữu bãi xe nào</h4><span class="lot-address">Bãi xe được tạo đúng OwnerId sẽ xuất hiện tại đây.</span></div></div>
+          }
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div class="card-header"><h3 class="card-title">Hành động nhanh</h3></div>
+        <div class="quick-actions">
+          <a class="action-btn" routerLink="/owner/lots"><div class="icon-circle text-emerald"><i class="ph ph-buildings"></i></div><span>Xem bãi xe của tôi</span></a>
+          <a class="action-btn" routerLink="/owner/bookings"><div class="icon-circle text-blue"><i class="ph ph-ticket"></i></div><span>Xem lượt đặt chỗ</span></a>
+          <a class="action-btn" routerLink="/owner/staff"><div class="icon-circle text-orange"><i class="ph ph-users"></i></div><span>Quản lý nhân sự</span></a>
+        </div>
+      </div>
+    </div>
+  }
+</div>

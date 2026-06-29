@@ -15,6 +15,7 @@ export class ApiClient {
   get<T>(path: string, params?: HttpParams) { return this.request(this.http.get<ApiResponse<T>>(`${this.baseUrl}${path}`, { params })); }
   post<T>(path: string, body: unknown = {}) { return this.request(this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, body)); }
   put<T>(path: string, body: unknown) { return this.request(this.http.put<ApiResponse<T>>(`${this.baseUrl}${path}`, body)); }
+  delete<T>(path: string) { return this.request(this.http.delete<ApiResponse<T>>(`${this.baseUrl}${path}`)); }
 
   private request<T>(source: Observable<ApiResponse<T>>) {
     return source.pipe(

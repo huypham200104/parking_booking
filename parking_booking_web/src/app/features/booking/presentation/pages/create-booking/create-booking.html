@@ -8,6 +8,19 @@
       @if (isLoading()) {
         <div class="lot-grid lot-grid--loading">@for (item of [1,2,3,4,5,6]; track item) { <div><span></span><span></span><span></span></div> }</div>
       } @else {
+        @if (recentParkingLots().length) {
+          <section class="recent-lots" aria-labelledby="recent-lots-title">
+            <header><div><p class="booking-kicker">Đặt lại nhanh</p><h2 id="recent-lots-title">Bãi bạn đã từng đỗ</h2></div><span>Chỉ gồm lượt đã hoàn thành</span></header>
+            <div class="recent-lots__rail">
+              @for (lot of recentParkingLots(); track lot.id) {
+                <button type="button" [disabled]="lot.availableSlots === 0" (click)="chooseParkingLot(lot)">
+                  <span><strong>{{ lot.name }}</strong><small>{{ lot.address }}</small></span>
+                  <span class="recent-lots__availability">{{ lot.availableSlots > 0 ? lot.availableSlots + ' chỗ trống' : 'Đã đầy' }}</span>
+                </button>
+              }
+            </div>
+          </section>
+        }
         <div class="lot-count"><strong>{{ parkingLots().length }}</strong> bãi đỗ đang hoạt động</div>
         <div class="lot-grid">
           @for (lot of pagedParkingLots(); track lot.id) {
@@ -27,7 +40,20 @@
     } @else if (isLoading()) {
       <div class="booking-state"><h1>Đang chuẩn bị sơ đồ chỗ đỗ</h1><p>ParkGo đang tải bãi xe, phương tiện và các tầng khả dụng.</p></div>
     } @else if (createdBooking(); as booking) {
-      <div class="booking-success"><p class="booking-kicker">Đặt chỗ thành công</p><h1>Chỗ đỗ đã được giữ</h1><p>Mã đặt chỗ của bạn</p><strong>{{ booking.bookingCode }}</strong><div><a class="btn btn-primary" routerLink="/history">Xem lịch sử</a><a class="btn btn-secondary" routerLink="/map">Về bản đồ</a></div></div>
+      <div class="booking-success">
+        <p class="booking-kicker">Đặt chỗ thành công</p><h1>Chỗ đỗ đã được giữ</h1>
+        @if (!isHoldExpired()) {
+          <div class="booking-countdown" role="timer" aria-live="off"><span>Thời gian giữ chỗ còn lại</span><strong>{{ countdownLabel() }}</strong></div>
+          <p>Đưa mã QR này cho nhân viên khi vào bãi.</p>
+        } @else {
+          <div class="booking-expired" role="alert"><strong>Đã hết thời gian giữ chỗ</strong><span>Phiên đặt chỗ của bạn đã bị hủy.</span></div>
+        }
+        @if (isLoadingQr()) { <div class="booking-qr-state">Đang tạo mã QR...</div> }
+        @if (bookingQrUrl()) { <img class="booking-qr" [class.booking-qr--expired]="isHoldExpired()" [src]="bookingQrUrl()" alt="Mã QR cho booking {{ booking.bookingCode }}" /> }
+        @if (qrErrorMessage()) { <div class="booking-error" role="alert">{{ qrErrorMessage() }}</div> }
+        <small>Mã đặt chỗ</small><strong>{{ booking.bookingCode }}</strong>
+        <div><a class="btn btn-primary" [routerLink]="['/bookings', booking.id]">Mở mã QR</a><a class="btn btn-secondary" routerLink="/history">Xem lịch sử</a></div>
+      </div>
     } @else if (parkingLot(); as lot) {
       <button class="change-lot" type="button" (click)="changeParkingLot()">Quay lại danh sách bãi</button><header class="booking-header"><div><p class="booking-kicker">Đặt chỗ</p><h1>{{ lot.name }}</h1><p>{{ lot.address }}</p></div><div class="booking-availability"><strong>{{ lot.availableSlots }}</strong><span>trên {{ lot.totalSlots }} chỗ còn trống</span></div></header>
 
@@ -37,11 +63,53 @@
         <main>
           <section class="booking-section"><div class="section-heading"><span>01</span><div><h2>Chọn tầng</h2><p>Chọn khu vực bạn muốn gửi xe.</p></div></div><div class="floor-tabs">@for (floor of floors(); track floor.id) { <button type="button" [class.active]="selectedFloor()?.id === floor.id" (click)="selectFloor(floor)">{{ floor.floorName }}</button> }</div></section>
           <section class="booking-section"><div class="section-heading"><span>02</span><div><h2>Chọn chỗ đỗ</h2><p>Màu xanh là chỗ có thể đặt ngay.</p></div></div><div class="slot-legend"><span><i class="available"></i>Còn trống</span><span><i></i>Không khả dụng</span></div><div class="slot-grid">@for (slot of slots(); track slot.id) { <button type="button" [disabled]="slot.status !== 0" [class.selected]="selectedSlot()?.id === slot.id" (click)="selectSlot(slot)"><small>{{ slot.vehicleType === 1 ? 'Xe máy' : 'Ô tô' }}</small><strong>{{ slot.slotName }}</strong></button> } @empty { <p class="slot-empty">Tầng này chưa có chỗ đỗ.</p> }</div></section>
-          <section class="booking-section"><div class="section-heading"><span>03</span><div><h2>Chọn phương tiện</h2><p>Phương tiện sẽ được gắn với lượt đặt chỗ.</p></div></div><div class="vehicle-list">@for (vehicle of vehicles(); track vehicle.id) { <button type="button" [class.active]="selectedVehicle()?.id === vehicle.id" (click)="selectVehicle(vehicle)"><span>{{ vehicle.vehicleType === 3 ? 'Xe máy' : 'Ô tô' }}</span><strong>{{ vehicle.licensePlate }}</strong>@if (vehicle.isDefault) { <small>Mặc định</small> }</button> } @empty { <p>Bạn chưa có phương tiện. Hãy thêm phương tiện trước khi đặt chỗ.</p> }</div></section>
+          <section class="booking-section"><div class="section-heading"><span>03</span><div><h2>Chọn phương tiện</h2><p>Phương tiện sẽ được gắn với lượt đặt chỗ.</p></div></div><div class="vehicle-list">@for (vehicle of vehicles(); track vehicle.id) { <button type="button" [class.active]="selectedVehicle()?.id === vehicle.id" (click)="selectVehicle(vehicle)"><span>{{ vehicle.vehicleType === 3 ? 'Xe máy' : 'Ô tô' }}</span><strong>{{ vehicle.licensePlate }}</strong>@if (vehicle.isDefault) { <small>Mặc định</small> }</button> } @empty { <div class="vehicle-list__empty"><p>Bạn chưa có phương tiện.</p><a routerLink="/vehicles">Thêm phương tiện</a></div> }</div></section>
         </main>
 
         <aside class="booking-summary"><p class="booking-kicker">Tóm tắt</p><h2>Lượt đặt của bạn</h2><dl><div><dt>Bãi xe</dt><dd>{{ lot.name }}</dd></div><div><dt>Tầng</dt><dd>{{ selectedFloor()?.floorName || 'Chưa chọn' }}</dd></div><div><dt>Chỗ đỗ</dt><dd>{{ selectedSlot()?.slotName || 'Chưa chọn' }}</dd></div><div><dt>Biển số</dt><dd>{{ selectedVehicle()?.licensePlate || 'Chưa chọn' }}</dd></div><div class="price"><dt>Giá từ</dt><dd>{{ money(lot.firstBlockPrice) }}/{{ lot.firstBlockHours }}h</dd></div></dl><button class="btn btn-primary" type="button" [disabled]="isSubmitting() || !selectedSlot() || !selectedVehicle()" (click)="submit()">{{ isSubmitting() ? 'Đang giữ chỗ' : 'Xác nhận đặt chỗ' }}</button><small>Giá thực tế được tính khi bạn trả xe.</small></aside>
       </div>
+
+      <section class="reviews-section" aria-labelledby="reviews-title">
+        <header class="reviews-header">
+          <div><p class="booking-kicker">Trải nghiệm thực tế</p><h2 id="reviews-title">Đánh giá về {{ lot.name }}</h2></div>
+          @if (reviews().length) {
+            <div class="reviews-score"><strong>{{ reviewAverage().toFixed(1) }}</strong><div><span aria-label="5 sao">★★★★★</span><small>{{ reviews().length }} đánh giá</small></div></div>
+          }
+        </header>
+
+        @if (isLoadingReviews()) {
+          <div class="reviews-state">Đang tải đánh giá...</div>
+        } @else if (reviews().length) {
+          <div class="reviews-layout">
+            <aside class="rating-breakdown" aria-label="Phân bố điểm đánh giá">
+              @for (item of ratingDistribution(); track item.rating) {
+                <div><span>{{ item.rating }} ★</span><i><b [style.width.%]="item.percentage"></b></i><small>{{ item.count }}</small></div>
+              }
+            </aside>
+            <div class="review-list">
+              @for (review of reviews(); track review.id) {
+                <article class="review-card">
+                  <div class="review-card__avatar">{{ review.userName.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <header><div><strong>{{ review.userName }}</strong><span [attr.aria-label]="review.rating + ' trên 5 sao'">{{ '★★★★★'.slice(0, review.rating) }}<i>{{ '★★★★★'.slice(review.rating) }}</i></span></div><time [attr.datetime]="review.createdAt">{{ reviewDate(review.createdAt) }}</time></header>
+                    <p>{{ review.comment || 'Người dùng không để lại bình luận.' }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="reviews-state"><strong>Chưa có đánh giá</strong><p>Hãy là người đầu tiên chia sẻ trải nghiệm sau khi hoàn thành lượt đỗ.</p></div>
+        }
+      </section>
     }
   </div>
+  @if (lockedMessage()) {
+    <div class="account-lock-dialog" role="presentation" (click)="closeLockedDialog()">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="booking-lock-title" (click)="$event.stopPropagation()">
+        <span aria-hidden="true">!</span><h2 id="booking-lock-title">Không thể đặt chỗ</h2><p>{{ lockedMessage() }}</p>
+        <button class="btn btn-primary" type="button" (click)="closeLockedDialog()">Đã hiểu</button>
+      </section>
+    </div>
+  }
 </section>

@@ -113,7 +113,11 @@ public sealed class MockDataSeeder : IMockDataSeeder
             new User { Id = DeterministicGuid("user-driver-9"), PhoneNumber = "0933000009", FullName = "Bui Quang Vinh", Role = Role.Driver, TrustScore = 87 },
             new User { Id = DeterministicGuid("user-driver-10"), PhoneNumber = "0933000010", FullName = "Mai Phuong Thao", Role = Role.Driver, TrustScore = 99 },
             new User { Id = DeterministicGuid("user-driver-11"), PhoneNumber = "0933000011", FullName = "Truong Anh Kiet", Role = Role.Driver, TrustScore = 93 },
-            new User { Id = DeterministicGuid("user-driver-12"), PhoneNumber = "0933000012", FullName = "Ly Bao Tram", Role = Role.Driver, TrustScore = 89 }
+            new User { Id = DeterministicGuid("user-driver-12"), PhoneNumber = "0933000012", FullName = "Ly Bao Tram", Role = Role.Driver, TrustScore = 89 },
+            new User { Id = DeterministicGuid("user-driver-13"), PhoneNumber = "0933000013", FullName = "Nguyen Van A", Role = Role.Driver, TrustScore = 80 },
+            new User { Id = DeterministicGuid("user-driver-14"), PhoneNumber = "0933000014", FullName = "Tran Thi B", Role = Role.Driver, TrustScore = 75, IsLocked = true },
+            new User { Id = DeterministicGuid("user-driver-15"), PhoneNumber = "0933000015", FullName = "Le Van C", Role = Role.Driver, TrustScore = 60, IsLocked = true },
+            new User { Id = DeterministicGuid("user-driver-16"), PhoneNumber = "0933000016", FullName = "Phan Dinh D", Role = Role.Driver, TrustScore = 90 }
         ];
     }
 
@@ -157,21 +161,25 @@ public sealed class MockDataSeeder : IMockDataSeeder
 
         return
         [
-            CreateParkingLot("parking-vincom-dong-khoi", owners[0].Id, "Vincom Dong Khoi Parking", "72 Le Thanh Ton, Ben Nghe, District 1", 10.77880, 106.70170, 36, 28, 25_000, 1, 2.1m, true, true, 4.6f),
-            CreateParkingLot("parking-saigon-centre", owners[0].Id, "Saigon Centre Parking", "65 Le Loi, Ben Nghe, District 1", 10.77390, 106.70030, 40, 31, 30_000, 1, 2.0m, true, true, 4.7f),
-            CreateParkingLot("parking-ben-thanh", owners[1].Id, "Ben Thanh Market Parking", "Le Lai, Ben Thanh, District 1", 10.77220, 106.69810, 24, 16, 20_000, 1, null, false, false, 4.2f, new TimeSpan(6, 0, 0), new TimeSpan(22, 0, 0)),
-            CreateParkingLot("parking-nguyen-hue", owners[1].Id, "Nguyen Hue Street Parking", "Nguyen Hue Walking Street, District 1", 10.77520, 106.70370, 18, 8, 15_000, 1, null, false, false, 4.0f, new TimeSpan(7, 0, 0), new TimeSpan(23, 0, 0)),
-            CreateParkingLot("parking-tao-dan", owners[0].Id, "Tao Dan Park Parking", "Truong Dinh, District 1", 10.77470, 106.69390, 30, 22, 18_000, 1, null, true, true, 4.3f),
-            CreateParkingLot("parking-diamond-plaza", owners[2].Id, "Diamond Plaza Parking", "34 Le Duan, Ben Nghe, District 1", 10.78210, 106.69840, 32, 21, 28_000, 1, 2.05m, true, true, 4.4f),
-            CreateParkingLot("parking-notre-dame", owners[2].Id, "Notre Dame Garage", "Cong Xa Paris, Ben Nghe, District 1", 10.77990, 106.69910, 22, 14, 22_000, 1, 2.0m, true, false, 4.1f, new TimeSpan(6, 30, 0), new TimeSpan(22, 30, 0)),
-            CreateParkingLot("parking-takashimaya", owners[3].Id, "Takashimaya Basement Parking", "92 Nam Ky Khoi Nghia, Ben Nghe, District 1", 10.77330, 106.70080, 42, 35, 30_000, 1, 2.0m, true, true, 4.8f),
-            CreateParkingLot("parking-le-loi", owners[3].Id, "Le Loi Street Parking", "Le Loi Boulevard, District 1", 10.77370, 106.69920, 16, 7, 15_000, 1, null, false, false, 3.9f, new TimeSpan(7, 0, 0), new TimeSpan(22, 0, 0)),
-            CreateParkingLot("parking-ham-nghi", owners[4].Id, "Ham Nghi Street Parking", "Ham Nghi Boulevard, District 1", 10.77110, 106.70410, 16, 9, 15_000, 1, null, false, false, 4.0f, new TimeSpan(7, 0, 0), new TimeSpan(22, 0, 0)),
-            CreateParkingLot("parking-bitexco", owners[4].Id, "Bitexco Financial Tower Parking", "2 Hai Trieu, Ben Nghe, District 1", 10.77170, 106.70490, 38, 25, 32_000, 1, 2.05m, true, true, 4.6f),
-            CreateParkingLot("parking-opera-house", owners[1].Id, "Opera House Parking", "7 Lam Son Square, Ben Nghe, District 1", 10.77660, 106.70300, 20, 13, 24_000, 1, 2.0m, true, false, 4.3f, new TimeSpan(6, 0, 0), new TimeSpan(23, 0, 0)),
-            CreateParkingLot("parking-bui-vien", owners[2].Id, "Bui Vien Night Parking", "Pham Ngu Lao Ward, District 1", 10.76840, 106.69300, 28, 11, 18_000, 1, null, false, true, 4.1f),
-            CreateParkingLot("parking-september-23", owners[3].Id, "September 23 Park Parking", "Le Lai, Pham Ngu Lao, District 1", 10.77040, 106.69460, 34, 24, 18_000, 1, null, true, true, 4.2f),
-            CreateParkingLot("parking-independence-palace", owners[4].Id, "Independence Palace Parking", "135 Nam Ky Khoi Nghia, District 1", 10.77720, 106.69530, 26, 18, 20_000, 1, null, true, false, 4.4f, new TimeSpan(6, 0, 0), new TimeSpan(21, 30, 0))
+            CreateParkingLot("parking-vincom-dong-khoi", owners[0].Id, "Bãi xe Vincom Đồng Khởi", "72 Lê Thánh Tôn, Bến Nghé, Quận 1", 10.77880, 106.70170, 36, 28, 25_000, 1, 2.1m, true, true, 4.6f),
+            CreateParkingLot("parking-saigon-centre", owners[0].Id, "Bãi xe Saigon Centre", "65 Lê Lợi, Bến Nghé, Quận 1", 10.77390, 106.70030, 40, 31, 30_000, 1, 2.0m, true, true, 4.7f),
+            CreateParkingLot("parking-ben-thanh", owners[1].Id, "Bãi xe Chợ Bến Thành", "Đường Lê Lai, Bến Thành, Quận 1", 10.77220, 106.69810, 24, 16, 20_000, 1, null, false, false, 4.2f, new TimeSpan(6, 0, 0), new TimeSpan(22, 0, 0)),
+            CreateParkingLot("parking-nguyen-hue", owners[1].Id, "Bãi đỗ Phố đi bộ Nguyễn Huệ", "Phố đi bộ Nguyễn Huệ, Quận 1", 10.77520, 106.70370, 18, 8, 15_000, 1, null, false, false, 4.0f, new TimeSpan(7, 0, 0), new TimeSpan(23, 0, 0)),
+            CreateParkingLot("parking-tao-dan", owners[0].Id, "Bãi xe Công viên Tao Đàn", "Đường Trương Định, Quận 1", 10.77470, 106.69390, 30, 22, 18_000, 1, null, true, true, 4.3f),
+            CreateParkingLot("parking-diamond-plaza", owners[2].Id, "Bãi xe Diamond Plaza", "34 Lê Duẩn, Bến Nghé, Quận 1", 10.78210, 106.69840, 32, 21, 28_000, 1, 2.05m, true, true, 4.4f),
+            CreateParkingLot("parking-notre-dame", owners[2].Id, "Bãi xe Nhà thờ Đức Bà", "Công xã Paris, Bến Nghé, Quận 1", 10.77990, 106.69910, 22, 14, 22_000, 1, 2.0m, true, false, 4.1f, new TimeSpan(6, 30, 0), new TimeSpan(22, 30, 0)),
+            CreateParkingLot("parking-takashimaya", owners[3].Id, "Hầm xe Takashimaya", "92 Nam Kỳ Khởi Nghĩa, Bến Nghé, Quận 1", 10.77330, 106.70080, 42, 35, 30_000, 1, 2.0m, true, true, 4.8f),
+            CreateParkingLot("parking-le-loi", owners[3].Id, "Bãi đỗ đường Lê Lợi", "Đại lộ Lê Lợi, Quận 1", 10.77370, 106.69920, 16, 7, 15_000, 1, null, false, false, 3.9f, new TimeSpan(7, 0, 0), new TimeSpan(22, 0, 0)),
+            CreateParkingLot("parking-ham-nghi", owners[4].Id, "Bãi đỗ đường Hàm Nghi", "Đại lộ Hàm Nghi, Quận 1", 10.77110, 106.70410, 16, 9, 15_000, 1, null, false, false, 4.0f, new TimeSpan(7, 0, 0), new TimeSpan(22, 0, 0)),
+            CreateParkingLot("parking-bitexco", owners[4].Id, "Bãi xe Tòa nhà Bitexco", "2 Hải Triều, Bến Nghé, Quận 1", 10.77170, 106.70490, 38, 25, 32_000, 1, 2.05m, true, true, 4.6f),
+            CreateParkingLot("parking-opera-house", owners[1].Id, "Bãi xe Nhà hát Thành phố", "7 Công trường Lam Sơn, Bến Nghé, Quận 1", 10.77660, 106.70300, 20, 13, 24_000, 1, 2.0m, true, false, 4.3f, new TimeSpan(6, 0, 0), new TimeSpan(23, 0, 0)),
+            CreateParkingLot("parking-bui-vien", owners[2].Id, "Bãi xe đêm Bùi Viện", "Phường Phạm Ngũ Lão, Quận 1", 10.76840, 106.69300, 28, 11, 18_000, 1, null, false, true, 4.1f),
+            CreateParkingLot("parking-september-23", owners[3].Id, "Bãi xe Công viên 23 tháng 9", "Lê Lai, Phạm Ngũ Lão, Quận 1", 10.77040, 106.69460, 34, 24, 18_000, 1, null, true, true, 4.2f),
+            CreateParkingLot("parking-independence-palace", owners[4].Id, "Bãi xe Dinh Độc Lập", "135 Nam Kỳ Khởi Nghĩa, Quận 1", 10.77720, 106.69530, 26, 18, 20_000, 1, null, true, false, 4.4f, new TimeSpan(6, 0, 0), new TimeSpan(21, 30, 0)),
+            CreateParkingLot("parking-vincom-thu-duc", owners[0].Id, "Bãi xe Vincom Thủ Đức", "216 Võ Văn Ngân, Thủ Đức", 10.85210, 106.75840, 50, 45, 20_000, 1, 2.1m, true, true, 4.5f),
+            CreateParkingLot("parking-gigamall", owners[1].Id, "Bãi xe Gigamall Phạm Văn Đồng", "240-242 Phạm Văn Đồng, Thủ Đức", 10.82860, 106.72140, 80, 60, 20_000, 1, 2.2m, true, true, 4.7f),
+            CreateParkingLot("parking-coopmart-phu-lam", owners[2].Id, "Bãi xe Co.opmart Phú Lâm", "06 Bà Hom, Quận 6", 10.75230, 106.63180, 40, 25, 15_000, 1, null, true, false, 4.1f, new TimeSpan(7, 30, 0), new TimeSpan(22, 0, 0)),
+            CreateParkingLot("parking-mega-market", owners[3].Id, "Bãi xe Mega Market Bình Phú", "Bình Phú, Quận 6", 10.74230, 106.62680, 100, 80, 10_000, 1, null, false, false, 4.0f)
         ];
     }
 
@@ -199,7 +207,7 @@ public sealed class MockDataSeeder : IMockDataSeeder
             OwnerId = ownerId,
             Name = name,
             Address = address,
-            Description = $"Mock parking lot near {address}.",
+            Description = $"Bãi đỗ xe tại {address}.",
             CoverImageUrl = $"https://example.local/parking-lots/{key}.jpg",
             ContactPhone = "02839990000",
             Location = _geometryFactory.CreatePoint(new Coordinate(longitude, latitude)),
@@ -303,7 +311,8 @@ public sealed class MockDataSeeder : IMockDataSeeder
             .ToList();
 
         return parkingLots
-            .Take(9)
+            .OrderBy(parkingLot => parkingLot.Name)
+            .Take(guards.Count)
             .Select((parkingLot, index) => new ParkingLotStaff
             {
                 Id = DeterministicGuid($"staff-{guards[index % guards.Count].Id}-{parkingLot.Id}"),
@@ -425,8 +434,8 @@ public sealed class MockDataSeeder : IMockDataSeeder
         var occupiedSlots = slots.Where(s => s.Status == ParkingSlotStatus.Occupied).ToList();
         var availableSlots = slots.Where(s => s.Status == ParkingSlotStatus.Available).ToList();
 
-        return
-        [
+        var bookings = new List<Booking>
+        {
             new Booking
             {
                 Id = DeterministicGuid("booking-pending-driver1"),
@@ -450,20 +459,6 @@ public sealed class MockDataSeeder : IMockDataSeeder
                 BookingTimestamp = DateTime.UtcNow.AddHours(-2),
                 CheckInTimestamp = DateTime.UtcNow.AddHours(-1),
                 Status = BookingStatus.CheckedIn
-            },
-            new Booking
-            {
-                Id = DeterministicGuid("booking-completed-driver1"),
-                UserId = drivers[0].Id,
-                VehicleId = vehicles.Single(v => v.UserId == drivers[0].Id && v.IsDefault).Id,
-                ParkingLotId = lots[2].Id,
-                ParkingSlotId = availableSlots[0].Id,
-                BookingCode = "Z9X8C7",
-                BookingTimestamp = DateTime.UtcNow.AddDays(-2).AddHours(-3),
-                CheckInTimestamp = DateTime.UtcNow.AddDays(-2).AddHours(-2),
-                CheckOutTimestamp = DateTime.UtcNow.AddDays(-2),
-                Status = BookingStatus.Completed,
-                TotalPrice = 60_000
             },
             new Booking
             {
@@ -491,20 +486,6 @@ public sealed class MockDataSeeder : IMockDataSeeder
             },
             new Booking
             {
-                Id = DeterministicGuid("booking-completed-driver6"),
-                UserId = drivers[5].Id,
-                VehicleId = vehicles.Single(v => v.UserId == drivers[5].Id && v.IsDefault).Id,
-                ParkingLotId = lots[5].Id,
-                ParkingSlotId = availableSlots[1].Id,
-                BookingCode = "U1V2W3",
-                BookingTimestamp = DateTime.UtcNow.AddDays(-3).AddHours(-4),
-                CheckInTimestamp = DateTime.UtcNow.AddDays(-3).AddHours(-3),
-                CheckOutTimestamp = DateTime.UtcNow.AddDays(-3).AddHours(-1),
-                Status = BookingStatus.Completed,
-                TotalPrice = 75_000
-            },
-            new Booking
-            {
                 Id = DeterministicGuid("booking-cancelled-driver7"),
                 UserId = drivers[6].Id,
                 VehicleId = vehicles.Single(v => v.UserId == drivers[6].Id && v.IsDefault).Id,
@@ -525,22 +506,37 @@ public sealed class MockDataSeeder : IMockDataSeeder
                 BookingCode = "G7H8I9",
                 BookingTimestamp = DateTime.UtcNow.AddDays(-1).AddHours(-5),
                 Status = BookingStatus.NoShow
-            },
-            new Booking
-            {
-                Id = DeterministicGuid("booking-completed-driver9"),
-                UserId = drivers[8].Id,
-                VehicleId = vehicles.Single(v => v.UserId == drivers[8].Id && v.IsDefault).Id,
-                ParkingLotId = lots[8].Id,
-                ParkingSlotId = availableSlots[4].Id,
-                BookingCode = "J1K2L3",
-                BookingTimestamp = DateTime.UtcNow.AddDays(-4).AddHours(-3),
-                CheckInTimestamp = DateTime.UtcNow.AddDays(-4).AddHours(-2),
-                CheckOutTimestamp = DateTime.UtcNow.AddDays(-4),
-                Status = BookingStatus.Completed,
-                TotalPrice = 90_000
             }
-        ];
+        };
+
+        // Generate 3 completed bookings for EVERY parking lot
+        var random = new Random(42);
+        foreach (var lot in parkingLots)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var driver = drivers[random.Next(drivers.Count)];
+                var vehicle = vehicles.First(v => v.UserId == driver.Id && v.IsDefault);
+                var checkoutTime = DateTime.UtcNow.AddDays(-random.Next(1, 30)).AddHours(-random.Next(1, 10));
+                
+                bookings.Add(new Booking
+                {
+                    Id = DeterministicGuid($"booking-completed-{lot.Id}-{i}"),
+                    UserId = driver.Id,
+                    VehicleId = vehicle.Id,
+                    ParkingLotId = lot.Id,
+                    ParkingSlotId = availableSlots[random.Next(availableSlots.Count)].Id,
+                    BookingCode = $"{(char)('A' + random.Next(26))}{(char)('A' + random.Next(26))}{random.Next(1000, 9999)}",
+                    BookingTimestamp = checkoutTime.AddHours(-4),
+                    CheckInTimestamp = checkoutTime.AddHours(-3),
+                    CheckOutTimestamp = checkoutTime,
+                    Status = BookingStatus.Completed,
+                    TotalPrice = (decimal)(random.Next(20, 100) * 1000)
+                });
+            }
+        }
+        
+        return bookings;
     }
 
     private static List<Transaction> CreateTransactions(IReadOnlyCollection<Booking> bookings)

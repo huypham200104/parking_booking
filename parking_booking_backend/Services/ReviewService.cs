@@ -62,6 +62,14 @@ public sealed class ReviewService : IReviewService
         _dbContext.Reviews.Add(review);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var newAverage = await _dbContext.Reviews
+            .Where(r => r.ParkingLotId == booking.ParkingLotId)
+            .AverageAsync(r => r.Rating, cancellationToken);
+
+        var parkingLot = await _dbContext.ParkingLots.FirstAsync(p => p.Id == booking.ParkingLotId, cancellationToken);
+        parkingLot.AverageRating = (float)Math.Round(newAverage, 1);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         return new ReviewResponse(
             review.Id,
             user.Id,

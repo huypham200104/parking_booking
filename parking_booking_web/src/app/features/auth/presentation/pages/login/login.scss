@@ -51,6 +51,7 @@
   padding: clamp(1.25rem, 3vw, 2.25rem);
   overflow: hidden;
 
+
   &::after {
     content: "";
     position: absolute;
@@ -63,11 +64,13 @@
   }
 }
 
+
 .login-page__story-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 38rem;
 }
+
 
 .login-page__kicker,
 .login-card__eyebrow {
@@ -98,7 +101,7 @@
 
 .parking-preview {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(100%, 25rem);
   margin-top: 1.5rem;
   padding: 0.85rem;
@@ -342,6 +345,16 @@
   }
 }
 
+.login-form__otp-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+
+  .btn {
+    width: 100%;
+  }
+}
+
 .remember {
   display: inline-flex;
   align-items: center;
@@ -418,6 +431,10 @@
   .login-form__options {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .login-form__otp-actions {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -6,3 +6,7 @@ export interface CurrentUser {
   trustScore: number;
   avatarUrl?: string | null;
 }
+
+export interface UpdateCurrentUser {
+  fullName: string;
+}

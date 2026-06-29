@@ -1,0 +1,54 @@
+<main class="vehicles-page">
+  <div class="vehicles-shell container">
+    <header class="vehicles-header">
+      <div>
+        <p class="vehicles-kicker">Hồ sơ di chuyển</p>
+        <h1>Phương tiện của tôi</h1>
+        <p>Quản lý biển số được sử dụng khi đặt chỗ và làm thủ tục tại bãi xe.</p>
+      </div>
+      <div class="vehicles-count"><strong>{{ vehicleCount() }}</strong><span>phương tiện</span></div>
+    </header>
+
+    <div class="vehicles-layout">
+      <section class="vehicles-list" aria-labelledby="vehicle-list-title">
+        <div class="vehicles-section-heading"><div><p>Danh sách hiện tại</p><h2 id="vehicle-list-title">Xe đã lưu</h2></div></div>
+
+        @if (errorMessage()) { <div class="vehicles-message vehicles-message--error" role="alert">{{ errorMessage() }}</div> }
+        @if (successMessage()) { <div class="vehicles-message vehicles-message--success" role="status">{{ successMessage() }}</div> }
+
+        @if (isLoading()) {
+          <div class="vehicle-skeleton" aria-label="Đang tải phương tiện" aria-busy="true">@for (item of [1,2]; track item) { <div><span></span><span></span></div> }</div>
+        } @else {
+          <div class="vehicle-grid">
+            @for (vehicle of vehicles(); track vehicle.id) {
+              <article class="vehicle-card" [class.vehicle-card--default]="vehicle.isDefault">
+                <div class="vehicle-card__visual" aria-hidden="true"><span>{{ vehicle.vehicleType === 3 ? 'M' : 'P' }}</span></div>
+                <div class="vehicle-card__body">
+                  <div class="vehicle-card__meta"><span>{{ typeLabel(vehicle.vehicleType) }}</span>@if (vehicle.isDefault) { <em>Mặc định</em> }</div>
+                  <h3>{{ vehicle.licensePlate }}</h3>
+                  <p>{{ vehicle.isDefault ? 'Tự động được chọn khi bạn đặt chỗ.' : 'Sẵn sàng để chọn khi đặt chỗ.' }}</p>
+                  @if (editingId() === vehicle.id) {
+                    <div class="vehicle-card__edit"><select [(ngModel)]="editVehicleType" aria-label="Loại phương tiện">@for (type of vehicleTypes; track type.value) { <option [ngValue]="type.value">{{ type.label }}</option> }</select><label><input type="checkbox" [(ngModel)]="editIsDefault" /> Đặt mặc định</label><div><button type="button" (click)="saveEdit(vehicle)" [disabled]="isSaving()">Lưu</button><button type="button" (click)="cancelEdit()">Hủy</button></div></div>
+                  }
+                </div>
+                <div class="vehicle-card__actions"><button type="button" (click)="startEdit(vehicle)">Sửa</button><button class="vehicle-card__delete" type="button" (click)="deleteVehicle(vehicle)" [disabled]="deletingId() === vehicle.id">{{ deletingId() === vehicle.id ? 'Đang xóa' : 'Xóa' }}</button></div>
+              </article>
+            } @empty {
+              <div class="vehicles-empty"><span aria-hidden="true">P</span><h3>Chưa có phương tiện</h3><p>Thêm biển số đầu tiên để có thể bắt đầu đặt chỗ.</p></div>
+            }
+          </div>
+        }
+      </section>
+
+      <aside class="vehicle-form-panel">
+        <p class="vehicles-kicker">Thêm mới</p><h2>Thông tin phương tiện</h2><p>Biển số sẽ được chuẩn hóa thành chữ in hoa.</p>
+        <form (ngSubmit)="addVehicle()">
+          <label><span>Biển số xe</span><input name="licensePlate" type="text" minlength="5" maxlength="20" required [(ngModel)]="licensePlate" placeholder="51A-123.45" autocomplete="off" /></label>
+          <label><span>Loại phương tiện</span><select name="vehicleType" [(ngModel)]="vehicleType">@for (type of vehicleTypes; track type.value) { <option [ngValue]="type.value">{{ type.label }}</option> }</select></label>
+          <label class="vehicle-default"><input name="isDefault" type="checkbox" [(ngModel)]="isDefault" /><span><strong>Đặt làm mặc định</strong><small>Xe này sẽ được chọn trước khi đặt chỗ.</small></span></label>
+          <button class="btn btn-primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Đang thêm...' : 'Thêm phương tiện' }}</button>
+        </form>
+      </aside>
+    </div>
+  </div>
+</main>

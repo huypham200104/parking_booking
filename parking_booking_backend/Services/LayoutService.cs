@@ -43,6 +43,12 @@ public sealed class LayoutService : ILayoutService
     {
         await EnsureCanManageParkingLotAsync(parkingLotId, cancellationToken);
 
+        var floorName = request.FloorName.Trim();
+        if (await _dbContext.ParkingFloors.AnyAsync(f => f.ParkingLotId == parkingLotId && f.FloorName == floorName, cancellationToken))
+        {
+            throw new ApiException("Tên tầng đã tồn tại trong bãi xe này.", StatusCodes.Status409Conflict);
+        }
+
         if (request.TemplateId.HasValue)
         {
             var templateExists = await _dbContext.LayoutTemplates.AnyAsync(t => t.Id == request.TemplateId.Value, cancellationToken);
@@ -55,7 +61,7 @@ public sealed class LayoutService : ILayoutService
         var floor = new ParkingFloor
         {
             ParkingLotId = parkingLotId,
-            FloorName = request.FloorName.Trim(),
+            FloorName = floorName,
             TemplateId = request.TemplateId,
             CustomBackgroundImageUrl = request.CustomBackgroundImageUrl
         };
@@ -87,6 +93,29 @@ public sealed class LayoutService : ILayoutService
             .Where(s => s.ParkingFloorId == floorId)
             .ToListAsync(cancellationToken);
 
+        var existingSlotIds = existingSlots.Select(slot => slot.Id).ToList();
+        var activelyBookedSlotIds = await _dbContext.Bookings
+            .Where(booking => existingSlotIds.Contains(booking.ParkingSlotId)
+                && (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn))
+            .Select(booking => booking.ParkingSlotId)
+            .ToHashSetAsync(cancellationToken);
+
+        var requestedIds = request.Where(item => item.Id.HasValue).Select(item => item.Id!.Value).ToHashSet();
+        var removedSlots = existingSlots.Where(slot => !requestedIds.Contains(slot.Id)).ToList();
+        if (removedSlots.Count > 0)
+        {
+            var removedIds = removedSlots.Select(slot => slot.Id).ToList();
+            var hasActiveBooking = await _dbContext.Bookings.AnyAsync(booking =>
+                removedIds.Contains(booking.ParkingSlotId)
+                && (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn),
+                cancellationToken);
+            if (hasActiveBooking)
+            {
+                throw new ApiException("Không thể xóa chỗ đang có đơn chờ hoặc xe đang đỗ.", StatusCodes.Status409Conflict);
+            }
+            _dbContext.ParkingSlots.RemoveRange(removedSlots);
+        }
+
         foreach (var item in request)
         {
             ParkingSlot? slot = null;
@@ -101,8 +130,20 @@ public sealed class LayoutService : ILayoutService
 
             if (slot is null)
             {
+                if (item.Status == ParkingSlotStatus.Occupied)
+                {
+                    throw new ApiException("Chỗ mới không thể được đặt trạng thái đang có xe.", StatusCodes.Status400BadRequest);
+                }
                 slot = new ParkingSlot { ParkingFloorId = floorId };
                 _dbContext.ParkingSlots.Add(slot);
+            }
+            else if (activelyBookedSlotIds.Contains(slot.Id) && item.Status != ParkingSlotStatus.Occupied)
+            {
+                throw new ApiException($"Chỗ {slot.SlotName} đang có booking hoạt động nên không thể đổi trạng thái.", StatusCodes.Status409Conflict);
+            }
+            else if (!activelyBookedSlotIds.Contains(slot.Id) && item.Status == ParkingSlotStatus.Occupied)
+            {
+                throw new ApiException("Trạng thái đang có xe chỉ được cập nhật bởi quy trình booking.", StatusCodes.Status400BadRequest);
             }
 
             slot.SlotName = item.SlotName.Trim();

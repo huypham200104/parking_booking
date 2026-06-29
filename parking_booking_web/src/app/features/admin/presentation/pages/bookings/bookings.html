@@ -1,0 +1,113 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Quản lý đặt chỗ</h1>
+      <p class="page-subtitle">Theo dõi toàn bộ các lượt đặt chỗ đỗ xe trong hệ thống.</p>
+    </div>
+  </div>
+
+  <div class="data-card">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="error-state" *ngIf="error">
+      <i class="ph ph-warning-circle"></i>
+      <p>{{ error }}</p>
+      <button class="btn btn-outline" (click)="loadData()">Thử lại</button>
+    </div>
+
+    <div class="table-container" *ngIf="!error">
+      <table class="premium-table">
+        <thead>
+          <tr>
+            <th>Mã Booking</th>
+            <th>Bãi đỗ / Vị trí</th>
+            <th>Biển số xe</th>
+            <th>Thời gian (Vào - Ra)</th>
+            <th>Tổng tiền</th>
+            <th>Trạng thái</th>
+            <th class="text-right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let booking of bookings" class="table-row">
+            <td>
+              <div class="booking-code-badge">
+                {{ booking.bookingCode }}
+              </div>
+            </td>
+            <td>
+              <div class="parking-info">
+                <span class="parking-name">{{ booking.parkingLotName }}</span>
+                <span class="slot-name">
+                  <i class="ph-fill ph-map-pin"></i> 
+                  Tầng {{ booking.floorName }} - Chỗ {{ booking.slotName }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="license-plate">
+                {{ booking.licensePlate }}
+              </div>
+            </td>
+            <td>
+              <div class="time-info">
+                <div class="time-row" *ngIf="booking.checkInTimestamp">
+                  <i class="ph ph-sign-in text-emerald"></i>
+                  <span>{{ booking.checkInTimestamp | date:'dd/MM HH:mm' }}</span>
+                </div>
+                <div class="time-row" *ngIf="booking.checkOutTimestamp">
+                  <i class="ph ph-sign-out text-orange"></i>
+                  <span>{{ booking.checkOutTimestamp | date:'dd/MM HH:mm' }}</span>
+                </div>
+                <div class="time-row text-muted" *ngIf="!booking.checkInTimestamp && !booking.checkOutTimestamp">
+                  Chưa check-in
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="price-text" *ngIf="(booking.totalPrice ?? 0) > 0">{{ booking.totalPrice | currency:'VND':'symbol':'1.0-0' }}</span>
+              <span class="price-text text-muted" *ngIf="!booking.totalPrice">--</span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="statusClass(booking.status)">
+                {{ statusLabel(booking.status) }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="action-buttons">
+                <button class="btn-icon" title="Chi tiết">
+                  <i class="ph ph-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="bookings.length === 0 && !loading">
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="ph ph-ticket"></i>
+                <p>Không có lượt đặt chỗ nào.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="totalPages > 1 && !error">
+      <span class="total-text">Tổng cộng: <strong>{{ totalCount }}</strong> lượt</span>
+      <div class="pagination-controls">
+        <button class="btn-page" [disabled]="pageIndex === 1" (click)="prevPage()">
+          <i class="ph ph-caret-left"></i>
+        </button>
+        <button *ngFor="let p of getPages()" class="btn-page num" [class.active]="p === pageIndex" (click)="goToPage(p)">
+          {{ p }}
+        </button>
+        <button class="btn-page" [disabled]="pageIndex === totalPages" (click)="nextPage()">
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

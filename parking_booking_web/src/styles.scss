@@ -7,6 +7,30 @@
 @import '../public/assets/colors.css';
 @import 'leaflet/dist/leaflet.css';
 
+.profile-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgb(15 23 42 / 0.58); backdrop-filter: blur(4px); }
+.profile-modal__dialog { width: min(30rem, 100%); padding: 1.25rem; border: 1px solid var(--color-border-base); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: var(--shadow-lg); }
+.profile-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.profile-modal__header small { color: var(--color-primary-500); font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; }
+.profile-modal__header h2 { margin: 0.2rem 0 0; font-size: 1.3rem; }
+.profile-modal__header button { border: 0; background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: 1.5rem; }
+.profile-modal form, .profile-modal label { display: grid; gap: 0.45rem; }
+.profile-modal form { gap: 1rem; }
+.profile-modal label span { color: var(--color-text-secondary); font-size: 0.82rem; font-weight: 700; }
+.profile-modal input { width: 100%; padding: 0.75rem 0.85rem; border: 1px solid var(--color-border-base); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); font: inherit; }
+.profile-modal input:focus { outline: 2px solid rgb(59 130 246 / 0.2); border-color: var(--color-primary-500); }
+.profile-modal__message { margin: 0; padding: 0.7rem; border-radius: var(--radius-sm); font-size: 0.82rem; }
+.profile-modal__message--error { background: rgb(239 68 68 / 0.1); color: var(--color-status-occupied-text); }
+.profile-modal__message--success { background: rgb(16 185 129 / 0.1); color: var(--color-success); }
+.profile-modal__actions { display: flex; justify-content: flex-end; gap: 0.65rem; }
+
+.booking-qr { width: 17.5rem; max-width: 100%; border-radius: var(--radius-md); background: #fff; }
+.booking-qr-state { padding: 2rem; color: var(--color-text-secondary); background: var(--color-bg-secondary); border-radius: var(--radius-md); }
+.booking-success > small { color: var(--color-text-muted); font-weight: 700; }
+.booking-countdown { display: flex; align-items: center; justify-content: space-between; gap: 2rem; width: min(22rem, 100%); padding: .75rem 1rem; border: 1px solid rgb(59 130 246 / .35); border-radius: var(--radius-md); background: var(--color-primary-alpha); }.booking-countdown span { color: var(--color-text-secondary); font-size: .78rem; }.booking-countdown strong { color: var(--color-primary-100); font: 900 1.45rem var(--font-mono); }
+.booking-expired { display: grid; gap: .2rem; width: min(25rem, 100%); padding: 1rem; border-radius: var(--radius-md); background: var(--color-status-occupied-bg); color: var(--color-status-occupied-text); }.booking-expired span { font-size: .82rem; }
+.booking-qr--expired { filter: grayscale(1); opacity: .2; pointer-events: none; }
+.account-lock-dialog { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 1rem; background: rgb(15 23 42 / .68); backdrop-filter: blur(5px); }.account-lock-dialog section { display: grid; justify-items: start; gap: .7rem; width: min(28rem, 100%); padding: 1.5rem; border: 1px solid rgb(239 68 68 / .4); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: var(--shadow-lg); }.account-lock-dialog section > span { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--color-status-occupied-bg); color: var(--color-status-occupied-text); font-weight: 900; }.account-lock-dialog p { color: var(--color-text-secondary); }.account-lock-dialog .btn { width: 100%; margin-top: .3rem; }
+
 /* =========================================
    Typography & Design Tokens
    ========================================= */
@@ -222,3 +246,53 @@ a {
 .float {
   animation: float 4s ease-in-out infinite;
 }
+
+/* Parking-lot review block shared by the booking detail page. */
+.reviews-section { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--color-border-base); }
+.reviews-header { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; }
+.reviews-header h2 { margin-top: .35rem; font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.reviews-score { display: flex; align-items: center; gap: .75rem; }
+.reviews-score > strong { font-size: 2.5rem; line-height: 1; }
+.reviews-score div { display: grid; }
+.reviews-score span { color: #f59e0b; letter-spacing: .08em; }
+.reviews-score small { color: var(--color-text-secondary); }
+.reviews-layout { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; margin-top: 1.5rem; align-items: start; }
+.rating-breakdown { display: grid; gap: .65rem; padding: 1rem; border: 1px solid var(--color-border-base); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.rating-breakdown div { display: grid; grid-template-columns: 2rem 1fr 1.5rem; align-items: center; gap: .55rem; font-size: .75rem; }
+.rating-breakdown i { height: .4rem; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-bg-secondary); }
+.rating-breakdown b { display: block; height: 100%; border-radius: inherit; background: #f59e0b; }
+.rating-breakdown small { color: var(--color-text-muted); text-align: right; }
+.review-list { display: grid; gap: .75rem; }
+.review-card { display: grid; grid-template-columns: auto 1fr; gap: .85rem; padding: 1.1rem; border: 1px solid var(--color-border-base); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.review-card__avatar { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--color-primary-alpha); color: var(--color-primary-500); font-weight: 900; }
+.review-card header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.review-card header > div { display: grid; }
+.review-card header span { color: #f59e0b; font-size: .8rem; letter-spacing: .06em; }
+.review-card header span i { color: var(--color-border-dark); font-style: normal; }
+.review-card time { color: var(--color-text-muted); font-size: .72rem; }
+.review-card p { margin-top: .55rem; color: var(--color-text-secondary); font-size: .88rem; line-height: 1.6; }
+.reviews-state { display: grid; justify-items: center; gap: .35rem; margin-top: 1.5rem; padding: 2rem; border: 1px dashed var(--color-border-dark); border-radius: var(--radius-lg); color: var(--color-text-secondary); text-align: center; }
+
+@media (max-width: 850px) { .reviews-layout { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .reviews-header { align-items: start; flex-direction: column; }
+  .review-card header { flex-direction: column; gap: .3rem; }
+}
+.pass-owned { margin-top: 2rem; }
+.pass-owned__heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.pass-owned__heading a { color: var(--color-primary-500); font-weight: 750; text-decoration: none; }
+/* Login image carousel is global to keep the component stylesheet within its Angular budget. */
+.login-page__story::before { content:""; position:absolute; inset:0; z-index:1; background:linear-gradient(90deg,rgb(2 6 23/.9),rgb(2 6 23/.48) 62%,rgb(2 6 23/.18)); pointer-events:none; }
+.login-carousel { position:absolute; inset:0; z-index:0; background:#020617; }
+.login-carousel img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transform:scale(1.025); transition:opacity 900ms ease,transform 5s ease; }
+.login-carousel img.active { opacity:1; transform:scale(1); }
+.login-carousel__controls { position:absolute; z-index:2; right:1.5rem; bottom:1.5rem; display:flex; gap:.45rem; }
+.login-carousel__controls button { width:1.6rem; height:.22rem; padding:0; border:0; border-radius:.2rem; background:rgb(255 255 255/.38); cursor:pointer; transition:width 200ms ease,background 200ms ease; }
+.login-carousel__controls button.active { width:2.8rem; background:#10b981; }
+.login-page__story-content .login-page__kicker { color:#5eead4; }
+.login-page__story-content .login-page__headline { color:#fff; text-shadow:0 2px 24px rgb(2 6 23/.35); }
+.login-page__story-content .login-page__lede { color:rgb(226 232 240/.9); }
+@media (prefers-reduced-motion:reduce) { .login-carousel img { transition:none; transform:none; } .login-carousel__controls button { transition:none; } }
+/* Recent completed parking lots shared on the booking entry surface. */
+.recent-lots{display:grid;gap:.8rem;margin:1.4rem 0 1.8rem;padding:1rem 0 1.2rem;border-block:1px solid var(--color-border-base)}
+.recent-lots>header{display:flex;align-items:end;justify-content:space-between;gap:1rem}.recent-lots>header h2{margin-top:.2rem;font-size:1.2rem}.recent-lots>header>span{color:var(--color-text-muted);font-size:.72rem}.recent-lots__rail{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.6rem}.recent-lots__rail button{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.85rem;border:1px solid var(--color-border-base);border-radius:var(--radius-md);background:var(--color-bg-surface);color:var(--color-text-primary);text-align:left;cursor:pointer}.recent-lots__rail button:hover:not(:disabled){border-color:var(--color-primary-500);background:var(--color-primary-alpha)}.recent-lots__rail button:disabled{opacity:.55;cursor:not-allowed}.recent-lots__rail button>span:first-child{display:grid;gap:.2rem;min-width:0}.recent-lots__rail small{overflow:hidden;color:var(--color-text-secondary);font-size:.7rem;text-overflow:ellipsis;white-space:nowrap}.recent-lots__availability{flex:0 0 auto;color:var(--color-status-available-text);font-size:.7rem;font-weight:800}@media(max-width:620px){.recent-lots>header{align-items:start;flex-direction:column}.recent-lots__rail{grid-template-columns:1fr}}

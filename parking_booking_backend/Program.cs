@@ -5,6 +5,9 @@ using parking_booking_backend.Middlewares;
 // Khởi tạo 1 object builder là 1 cái kho chứa khổng lồ
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();

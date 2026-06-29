@@ -35,6 +35,7 @@
         </button>
       }
     </nav>
+    @if (actionMessage()) { <p class="history-action-message" role="status">{{ actionMessage() }}</p> }
 
     @if (isLoading()) {
       <div class="history-list" aria-label="Đang tải lịch sử" aria-busy="true">
@@ -80,6 +81,14 @@
                 <div><dt>Nhận xe</dt><dd>{{ booking.checkInTimestamp ? (booking.checkInTimestamp | date: 'HH:mm, dd/MM/yyyy') : 'Chưa nhận chỗ' }}</dd></div>
                 <div class="history-item__price"><dt>Chi phí</dt><dd>{{ formatMoney(booking.totalPrice) }}</dd></div>
               </dl>
+              @if (booking.status === 0) {
+                <div class="history-item__actions">
+                  <a [routerLink]="['/bookings', booking.id]">Xem mã QR</a>
+                  <button type="button" (click)="cancelBooking(booking)" [disabled]="cancellingBookingId() === booking.id">
+                    {{ cancellingBookingId() === booking.id ? 'Đang hủy...' : 'Hủy đặt chỗ' }}
+                  </button>
+                </div>
+              }
             </div>
           </article>
         }

@@ -32,6 +32,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IMockDataSeeder, MockDataSeeder>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IVoucherService, VoucherService>();
+
+        services.AddHostedService<BookingAutoCancelService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

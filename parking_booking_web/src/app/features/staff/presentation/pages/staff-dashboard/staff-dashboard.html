@@ -1,0 +1,129 @@
+<main class="staff-page">
+  <div class="staff-page__shell container">
+    <header class="staff-header">
+      <div>
+        <p class="staff-header__eyebrow">Khu vực nhân viên</p>
+        <h1>Quản lý đơn đặt xe</h1>
+        <p>Xem đơn được gửi tới bãi, đối chiếu thông tin và thực hiện check-in/check-out.</p>
+      </div>
+      <div class="staff-header__workplace">
+        <span class="staff-header__shift"><i></i> Ca làm việc đang mở</span>
+        @if (primaryParkingLot(); as lot) {
+          <div class="current-workplace">
+            <span>Đang làm việc tại</span>
+            <strong>{{ lot.name }}</strong>
+            <small>{{ lot.address }}</small>
+          </div>
+        } @else if (!isLoadingParkingLots()) {
+          <div class="current-workplace current-workplace--empty">
+            <span>Chưa được phân công bãi xe</span>
+          </div>
+        }
+      </div>
+    </header>
+
+    <section class="assigned-lots" aria-labelledby="assigned-lots-title">
+      <div class="assigned-lots__heading">
+        <div><p>Bãi xe được phân công</p><h2 id="assigned-lots-title">Nơi làm việc của bạn</h2></div>
+        <strong>{{ parkingLots().length }} bãi xe</strong>
+      </div>
+      @if (isLoadingParkingLots()) {
+        <p class="assigned-lots__state">Đang tải thông tin phân công...</p>
+      } @else {
+        <div class="assigned-lots__grid">
+          @for (lot of parkingLots(); track lot.id) {
+            <article class="assigned-lot card">
+              <div class="assigned-lot__icon">P</div>
+              <div><h3>{{ lot.name }}</h3><p>{{ lot.address }}</p></div>
+              <div class="assigned-lot__capacity"><strong>{{ lot.availableSlots }}/{{ lot.totalSlots }}</strong><span>chỗ trống</span></div>
+            </article>
+          } @empty {
+            <p class="assigned-lots__state">Tài khoản này chưa được phân công vào bãi xe nào.</p>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="staff-grid">
+      <article class="scanner-card card">
+        <div class="section-heading">
+          <span>01</span>
+          <div><h2>Đơn đang chờ xử lý</h2><p>Chọn một đơn để xem thời gian và thông tin chi tiết.</p></div>
+        </div>
+
+        <div class="booking-queue">
+          @if (isLoadingBookings()) {
+            <p class="assigned-lots__state">Đang tải danh sách đơn...</p>
+          } @else {
+            @for (item of staffBookings(); track item.id) {
+              <button type="button" class="booking-queue__item" [class.active]="selectedBooking()?.id === item.id" (click)="selectBooking(item)">
+                <span><strong>{{ item.licensePlate }}</strong><small>{{ item.parkingLotName }} · {{ item.floorName }}/{{ item.slotName }}</small></span>
+                <span><strong>{{ item.bookingTimestamp | date:'HH:mm' }}</strong><small>{{ statusLabel(item.status) }}</small></span>
+              </button>
+            } @empty {
+              <div class="verification-empty"><h3>Không có đơn chờ xử lý</h3><p>Đơn mới tại bãi được phân công sẽ xuất hiện ở đây.</p></div>
+            }
+          }
+        </div>
+
+        <button class="btn btn-secondary refresh-bookings" type="button" (click)="loadBookings()" [disabled]="isLoadingBookings()">Làm mới danh sách</button>
+
+        <details class="qr-tool">
+          <summary>Tìm đơn bằng mã QR</summary>
+          <div class="camera-controls">
+            @if (!isCameraOpen()) { <button class="btn btn-secondary" type="button" (click)="startScanner()">Mở camera</button> }
+            @else { <div class="camera-preview"><video #cameraVideo playsinline muted></video><span class="camera-preview__frame"></span></div><button class="btn btn-secondary" type="button" (click)="stopScanner()">Đóng camera</button> }
+            @if (cameraMessage()) { <p class="camera-message">{{ cameraMessage() }}</p> }
+          </div>
+          <label class="scanner-field"><span>Nội dung QR</span><textarea rows="3" [ngModel]="qrToken()" (ngModelChange)="qrToken.set($event)"></textarea></label>
+          <button class="btn btn-secondary" type="button" (click)="verifyQr()" [disabled]="isSubmitting() || !qrToken().trim()">Tìm đơn</button>
+        </details>
+
+        @if (errorMessage()) { <p class="notice notice--error" role="alert">{{ errorMessage() }}</p> }
+        @if (successMessage()) { <p class="notice notice--success" role="status">{{ successMessage() }}</p> }
+      </article>
+
+      <aside class="verification-card card">
+        <div class="section-heading">
+          <span>02</span>
+          <div><h2>Chi tiết đơn đặt xe</h2><p>Đối chiếu biển số trước khi thực hiện thao tác.</p></div>
+        </div>
+
+        @if (selectedBooking(); as result) {
+          <div class="verification-status"><i></i> {{ statusLabel(result.status) }}</div>
+          <dl class="booking-details">
+            <div><dt>Mã đặt chỗ</dt><dd>{{ result.bookingCode }}</dd></div>
+            <div><dt>Biển số xe</dt><dd class="license-plate">{{ result.licensePlate }}</dd></div>
+            <div><dt>Bãi xe</dt><dd>{{ result.parkingLotName }}</dd></div>
+            <div><dt>Vị trí</dt><dd>{{ result.floorName }} / {{ result.slotName }}</dd></div>
+            <div><dt>Thời gian đặt</dt><dd>{{ result.bookingTimestamp | date:'HH:mm · dd/MM/yyyy' }}</dd></div>
+            <div><dt>Thời gian check-in</dt><dd>{{ result.checkInTimestamp ? (result.checkInTimestamp | date:'HH:mm · dd/MM/yyyy') : 'Chưa check-in' }}</dd></div>
+            @if (result.checkOutTimestamp) { <div><dt>Thời gian check-out</dt><dd>{{ result.checkOutTimestamp | date:'HH:mm · dd/MM/yyyy' }}</dd></div> }
+            @if (result.totalPrice !== null) { <div><dt>Tổng tiền</dt><dd>{{ result.totalPrice.toLocaleString('vi-VN') }}đ</dd></div> }
+          </dl>
+
+          <div class="operation-actions">
+            <button class="btn btn-primary" type="button" (click)="checkIn()" [disabled]="isSubmitting() || result.status !== 0">Check-in xe</button>
+            <button class="btn btn-secondary" type="button" (click)="checkOut()" [disabled]="isSubmitting() || result.status !== 1">Check-out và tính tiền</button>
+          </div>
+
+          @if (checkoutResult(); as payment) {
+            <div class="payment-result">
+              <span>Thời gian check-out</span>
+              <b>{{ payment.checkOutTimestamp | date:'HH:mm · dd/MM/yyyy' }}</b>
+              <span>Tổng tiền cần thu</span>
+              <strong>{{ payment.totalPrice.toLocaleString('vi-VN') }}đ</strong>
+              <small>Thu tiền trực tiếp từ khách hàng. Giao dịch đã được ghi nhận.</small>
+            </div>
+          }
+        } @else {
+          <div class="verification-empty" aria-live="polite">
+            <div class="verification-empty__icon">P</div>
+            <h3>Chưa chọn đơn</h3>
+            <p>Chọn một đơn trong danh sách để xem chi tiết.</p>
+          </div>
+        }
+      </aside>
+    </section>
+  </div>
+</main>

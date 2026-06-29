@@ -1,1 +1,15 @@
-<router-outlet />
+<router-outlet></router-outlet>
+
+@if (account.showLogoutModal()) {
+  <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title">
+    <div class="profile-modal__dialog">
+      <header class="profile-modal__header">
+        <h2 id="logout-modal-title">Đăng xuất thành công</h2>
+      </header>
+      <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">Bạn đã đăng xuất khỏi hệ thống. Hẹn gặp lại bạn lần sau!</p>
+      <div class="profile-modal__actions">
+        <button class="btn btn-primary" style="width: 100%;" type="button" (click)="closeLogoutModal()">Đóng và về trang chủ</button>
+      </div>
+    </div>
+  </div>
+}

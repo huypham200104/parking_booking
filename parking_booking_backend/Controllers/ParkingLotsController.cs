@@ -26,6 +26,22 @@ public sealed class ParkingLotsController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>.Ok(parkingLots));
     }
 
+    [Authorize(Roles = "Admin,ParkingOwner")]
+    [HttpPost]
+    public async Task<ActionResult<ApiResponse<ParkingLotDetailResponse>>> Create(CreateParkingLotRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _parkingLotService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, ApiResponse<ParkingLotDetailResponse>.Ok(result));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<ParkingLotDetailResponse>>> Update(Guid id, UpdateParkingLotRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _parkingLotService.UpdateAsync(id, request, cancellationToken);
+        return Ok(ApiResponse<ParkingLotDetailResponse>.Ok(result));
+    }
+
     [HttpGet("bounds")]
     public async Task<ActionResult<ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>>> GetInBounds([FromQuery] ParkingLotsInBoundsQuery query, CancellationToken cancellationToken)
     {
@@ -33,11 +49,26 @@ public sealed class ParkingLotsController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>.Ok(parkingLots));
     }
 
+    [HttpGet("search")]
+    public async Task<ActionResult<ApiResponse<ParkingLotSearchResponse>>> Search([FromQuery] string keyword, CancellationToken cancellationToken)
+    {
+        var result = await _parkingLotService.SearchAsync(keyword, cancellationToken);
+        return Ok(ApiResponse<ParkingLotSearchResponse>.Ok(result));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApiResponse<ParkingLotDetailResponse>>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var parkingLot = await _parkingLotService.GetByIdAsync(id, cancellationToken);
         return Ok(ApiResponse<ParkingLotDetailResponse>.Ok(parkingLot));
+    }
+
+    [Authorize(Roles = "Guard")]
+    [HttpGet("staff/me")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>>> GetAssignedToCurrentStaff(CancellationToken cancellationToken)
+    {
+        var parkingLots = await _parkingLotService.GetAssignedToCurrentStaffAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>.Ok(parkingLots));
     }
 
     [HttpPost("{id:guid}/report")]
@@ -52,6 +83,30 @@ public sealed class ParkingLotsController : ControllerBase
     {
         await _parkingLotService.AddStaffAsync(id, request, cancellationToken);
         return Ok(ApiResponse<object>.Ok(new { added = true }));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpPost("{id:guid}/staff/by-phone")]
+    public async Task<ActionResult<ApiResponse<object>>> AddStaffByPhone(Guid id, AddParkingLotStaffByPhoneRequest request, CancellationToken cancellationToken)
+    {
+        await _parkingLotService.AddStaffByPhoneAsync(id, request, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(new { added = true }));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpPost("{id:guid}/staff/create")]
+    public async Task<ActionResult<ApiResponse<object>>> CreateStaff(Guid id, CreateParkingLotStaffRequest request, CancellationToken cancellationToken)
+    {
+        await _parkingLotService.CreateStaffAsync(id, request, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(new { created = true }));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpDelete("{id:guid}/staff/{userId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> RemoveStaff(Guid id, Guid userId, CancellationToken cancellationToken)
+    {
+        await _parkingLotService.RemoveStaffAsync(id, userId, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(new { removed = true }));
     }
 
     [HttpGet("{id:guid}/floors")]
@@ -88,5 +143,29 @@ public sealed class ParkingLotsController : ControllerBase
     {
         var reviews = await reviewService.GetByParkingLotAsync(id, cancellationToken);
         return Ok(ApiResponse<IReadOnlyCollection<ReviewResponse>>.Ok(reviews));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpGet("owner/me")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>>> GetOwnedByMe(CancellationToken cancellationToken)
+    {
+        var parkingLots = await _parkingLotService.GetOwnedByMeAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>.Ok(parkingLots));
+    }
+
+    [Authorize(Roles = "ParkingOwner")]
+    [HttpGet("owner/staff")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<OwnerStaffAssignmentResponse>>>> GetMyStaff(CancellationToken cancellationToken)
+    {
+        var staff = await _parkingLotService.GetMyStaffAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<OwnerStaffAssignmentResponse>>.Ok(staff));
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/all")]
+    public async Task<ActionResult<ApiResponse<PaginationResponse<ParkingLotSummaryResponse>>>> GetAllAdmin([FromQuery] int page = 1, [FromQuery] int size = 10, [FromQuery] string? keyword = null, CancellationToken cancellationToken = default)
+    {
+        var result = await _parkingLotService.GetAllAdminAsync(page, size, keyword, cancellationToken);
+        return Ok(ApiResponse<PaginationResponse<ParkingLotSummaryResponse>>.Ok(result));
     }
 }

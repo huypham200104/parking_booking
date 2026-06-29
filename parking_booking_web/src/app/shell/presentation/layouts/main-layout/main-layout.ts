@@ -30,6 +30,6 @@ export class MainLayoutComponent {
   constructor(private readonly router: Router) {}
 
   shouldShowFooter(): boolean {
-    return !this.router.url.startsWith('/auth/') && !this.router.url.startsWith('/map');
+    return !this.router.url.startsWith('/auth/') && !this.router.url.startsWith('/map') && !this.router.url.startsWith('/staff');
   }
 }

@@ -9,6 +9,7 @@ namespace parking_booking_backend.Models
         public string FullName { get; set; } = string.Empty;
         public Role Role { get; set; }
         public int TrustScore { get; set; } = 100;
+        public bool IsLocked { get; set; } = false;
 
         // Navigation Properties
         public virtual ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();

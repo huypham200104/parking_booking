@@ -1,0 +1,22 @@
+<main class="booking-detail-page"><div class="booking-detail-shell container">
+  <a class="booking-detail-back" routerLink="/history">Quay lại lịch sử</a>
+  @if (isLoading()) {
+    <div class="booking-detail-state" aria-busy="true"><h1>Đang tải mã QR</h1><p>ParkGo đang kiểm tra trạng thái giữ chỗ.</p></div>
+  } @else if (errorMessage()) {
+    <div class="booking-detail-state booking-detail-state--error" role="alert"><h1>Không thể mở booking</h1><p>{{ errorMessage() }}</p><button class="btn btn-primary" type="button" (click)="load()">Thử lại</button></div>
+  } @else if (booking(); as item) {
+    <header class="booking-detail-header"><div><p>Mã đặt chỗ</p><h1>{{ item.bookingCode }}</h1><span>{{ statusLabel() }}</span></div><div><small>Biển số</small><strong>{{ item.licensePlate }}</strong></div></header>
+    <div class="booking-detail-layout"><section class="booking-ticket">
+      @if (item.status === 0 && !isExpired()) {
+        <div class="booking-countdown" role="timer"><span>Thời gian giữ chỗ còn lại</span><strong>{{ countdownLabel() }}</strong></div>
+        @if (qrUrl()) { <img class="booking-qr" [src]="qrUrl()" alt="Mã QR check-in cho booking {{ item.bookingCode }}" /> }
+        <p>Đưa mã này cho nhân viên bãi xe trước khi đồng hồ kết thúc.</p>
+      } @else if (isExpired()) {
+        <div class="booking-expired" role="alert"><strong>Đã hết thời gian giữ chỗ</strong><span>Phiên đặt chỗ của bạn đã bị hủy.</span></div>
+        @if (qrUrl()) { <img class="booking-qr booking-qr--expired" [src]="qrUrl()" alt="Mã QR đã hết hiệu lực" /> }
+      } @else {
+        <div class="booking-detail-finished"><strong>{{ statusLabel() }}</strong><p>Mã QR check-in không còn khả dụng cho trạng thái này.</p></div>
+      }
+    </section><aside class="booking-detail-info"><p>Thông tin bãi xe</p><h2>{{ item.parkingLotName }}</h2><address>{{ item.parkingLotAddress }}</address><dl><div><dt>Thời điểm đặt</dt><dd>{{ item.bookingTimestamp }}</dd></div><div><dt>Biển số</dt><dd>{{ item.licensePlate }}</dd></div></dl>@if(item.status===0&&!isExpired()){<form class="booking-voucher" (ngSubmit)="applyVoucher()"><label>Mã giảm giá<input name="voucherCode" [(ngModel)]="voucherCode" placeholder="PARKGO10" /></label><button type="submit" [disabled]="isApplyingVoucher()">{{isApplyingVoucher()?'Đang áp dụng...':'Áp dụng'}}</button>@if(voucherMessage()){<small role="status">{{voucherMessage()}}</small>}<a routerLink="/vouchers">Xem mã khả dụng</a></form>}@if(item.status===2){<div class="booking-review">@if(!isReviewOpen()){<button (click)="isReviewOpen.set(true)">Viết đánh giá</button>}@else{<form (ngSubmit)="submitReview()"><fieldset><legend>Số sao</legend>@for(star of [1,2,3,4,5];track star){<label><input type="radio" name="rating" [value]="star" [(ngModel)]="rating" />{{star}} ★</label>}</fieldset><textarea name="comment" [(ngModel)]="reviewComment" placeholder="Chia sẻ trải nghiệm của bạn"></textarea><button [disabled]="isSubmittingReview()">{{isSubmittingReview()?'Đang gửi...':'Gửi đánh giá'}}</button></form>}@if(reviewMessage()){<small role="status">{{reviewMessage()}}</small>}</div>}</aside></div>
+  }
+</div></main>

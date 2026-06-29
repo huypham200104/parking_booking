@@ -50,8 +50,118 @@ public sealed class BookingService : IBookingService
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetRecentCompletedParkingLotsAsync(CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId;
+        var recentLotIds = await _dbContext.Bookings
+            .AsNoTracking()
+            .Where(booking => booking.UserId == userId && booking.Status == BookingStatus.Completed)
+            .GroupBy(booking => booking.ParkingLotId)
+            .Select(group => new { ParkingLotId = group.Key, LastVisit = group.Max(booking => booking.CheckOutTimestamp ?? booking.BookingTimestamp) })
+            .OrderByDescending(item => item.LastVisit)
+            .Take(6)
+            .ToListAsync(cancellationToken);
+
+        if (recentLotIds.Count == 0) return Array.Empty<ParkingLotSummaryResponse>();
+
+        var ids = recentLotIds.Select(item => item.ParkingLotId).ToList();
+        var parkingLots = await _dbContext.ParkingLots
+            .AsNoTracking()
+            .Where(lot => ids.Contains(lot.Id) && lot.Status == ParkingLotStatus.Active)
+            .Select(lot => new ParkingLotSummaryResponse(
+                lot.Id, lot.Name, lot.Address, lot.Location.Y, lot.Location.X,
+                lot.TotalSlots, lot.AvailableSlots, lot.FirstBlockPrice, lot.FirstBlockHours,
+                lot.MaxHeight, lot.HasRoof, lot.Is24_7, lot.AverageRating, lot.Status, null))
+            .ToListAsync(cancellationToken);
+
+        return parkingLots.OrderBy(lot => ids.IndexOf(lot.Id)).ToList();
+    }
+
+    public async Task<IReadOnlyCollection<StaffBookingResponse>> GetForCurrentStaffAsync(CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId;
+
+        return await _dbContext.Bookings
+            .AsNoTracking()
+            .Where(booking => _dbContext.ParkingLotStaffs.Any(staff =>
+                staff.UserId == userId && staff.ParkingLotId == booking.ParkingLotId))
+            .OrderBy(booking => booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn ? 0 : 1)
+            .ThenByDescending(booking => booking.BookingTimestamp)
+            .Select(booking => new StaffBookingResponse(
+                booking.Id,
+                booking.BookingCode,
+                booking.ParkingLot!.Name,
+                booking.ParkingSlot!.ParkingFloor!.FloorName,
+                booking.ParkingSlot.SlotName,
+                booking.Vehicle != null ? booking.Vehicle.LicensePlate : booking.GuestLicensePlate ?? "N/A",
+                booking.BookingTimestamp,
+                booking.CheckInTimestamp,
+                booking.CheckOutTimestamp,
+                booking.Status,
+                booking.TotalPrice))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<StaffBookingResponse>> GetForOwnerAsync(CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId;
+
+        return await _dbContext.Bookings
+            .AsNoTracking()
+            .Where(booking => booking.ParkingLot != null && booking.ParkingLot.OwnerId == userId)
+            .OrderBy(booking => booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn ? 0 : 1)
+            .ThenByDescending(booking => booking.BookingTimestamp)
+            .Select(booking => new StaffBookingResponse(
+                booking.Id,
+                booking.BookingCode,
+                booking.ParkingLot!.Name,
+                booking.ParkingSlot!.ParkingFloor!.FloorName,
+                booking.ParkingSlot.SlotName,
+                booking.Vehicle != null ? booking.Vehicle.LicensePlate : booking.GuestLicensePlate ?? "N/A",
+                booking.BookingTimestamp,
+                booking.CheckInTimestamp,
+                booking.CheckOutTimestamp,
+                booking.Status,
+                booking.TotalPrice))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PaginationResponse<StaffBookingResponse>> GetAllAdminAsync(int pageIndex, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Bookings.AsNoTracking();
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var items = await query
+            .OrderByDescending(booking => booking.BookingTimestamp)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(booking => new StaffBookingResponse(
+                booking.Id,
+                booking.BookingCode,
+                booking.ParkingLot!.Name,
+                booking.ParkingSlot!.ParkingFloor!.FloorName,
+                booking.ParkingSlot.SlotName,
+                booking.Vehicle != null ? booking.Vehicle.LicensePlate : booking.GuestLicensePlate ?? "N/A",
+                booking.BookingTimestamp,
+                booking.CheckInTimestamp,
+                booking.CheckOutTimestamp,
+                booking.Status,
+                booking.TotalPrice))
+            .ToListAsync(cancellationToken);
+
+        return new PaginationResponse<StaffBookingResponse>(items, pageIndex, pageSize, totalCount, totalPages);
+    }
+
     public async Task<BookingResponse> CreateAsync(CreateBookingRequest request, CancellationToken cancellationToken)
     {
+        var currentUser = await _dbContext.Users.FindAsync(new object[] { _currentUser.UserId }, cancellationToken);
+        if (currentUser?.IsLocked == true)
+        {
+            throw new ApiException("Tài khoản của bạn đã bị khóa do hủy quá nhiều lần trong ngày. Không thể tạo Booking mới.", StatusCodes.Status403Forbidden);
+        }
+
         if (!request.VehicleId.HasValue && string.IsNullOrWhiteSpace(request.GuestLicensePlate))
         {
             throw new ApiException("Either vehicleId or guestLicensePlate is required.");
@@ -206,8 +316,8 @@ public sealed class BookingService : IBookingService
         slot.Status = ParkingSlotStatus.Available;
         parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
 
-        var paymentStatus = TransactionStatus.Pending;
-        string? vietQrUrl = CreateVietQrUrl(booking.BookingCode, totalPrice);
+        var paymentStatus = request.CollectCash ? TransactionStatus.Success : TransactionStatus.Pending;
+        string? vietQrUrl = request.CollectCash ? null : CreateVietQrUrl(booking.BookingCode, totalPrice);
 
         if (request.UseWallet)
         {
@@ -236,7 +346,7 @@ public sealed class BookingService : IBookingService
         {
             BookingId = booking.Id,
             Amount = totalPrice,
-            PaymentMethod = request.UseWallet ? PaymentMethod.Wallet : PaymentMethod.VietQR,
+            PaymentMethod = request.UseWallet ? PaymentMethod.Wallet : request.CollectCash ? PaymentMethod.Cash : PaymentMethod.VietQR,
             Status = paymentStatus,
             TransactionDate = DateTime.UtcNow
         });
@@ -244,7 +354,7 @@ public sealed class BookingService : IBookingService
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new CheckOutResponse(totalPrice, vietQrUrl, paymentStatus);
+        return new CheckOutResponse(totalPrice, vietQrUrl, paymentStatus, booking.CheckOutTimestamp.Value);
     }
 
     public async Task CancelAsync(Guid id, CancellationToken cancellationToken)
@@ -263,6 +373,22 @@ public sealed class BookingService : IBookingService
         booking.Status = BookingStatus.Cancelled;
         slot.Status = ParkingSlotStatus.Available;
         parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
+
+        var today = DateTime.UtcNow.Date;
+        var cancelledCountToday = await _dbContext.Bookings
+            .Where(b => b.UserId == booking.UserId 
+                        && b.Status == BookingStatus.Cancelled
+                        && b.BookingTimestamp.Date == today)
+            .CountAsync(cancellationToken);
+
+        if (cancelledCountToday + 1 >= 3)
+        {
+            var user = await _dbContext.Users.FindAsync(new object?[] { booking.UserId }, cancellationToken);
+            if (user != null)
+            {
+                user.IsLocked = true;
+            }
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -335,6 +461,14 @@ public sealed class BookingService : IBookingService
                 return new VerifyQrResponse(false, null, null, null, "Booking not found.");
             }
 
+            var canManageParkingLot = await _dbContext.ParkingLotStaffs.AnyAsync(
+                staff => staff.ParkingLotId == booking.ParkingLotId && staff.UserId == _currentUser.UserId,
+                cancellationToken);
+            if (!canManageParkingLot)
+            {
+                return new VerifyQrResponse(false, null, null, null, "Bạn không được phân công tại bãi xe của booking này.");
+            }
+
             var licensePlate = booking.Vehicle != null ? booking.Vehicle.LicensePlate : booking.GuestLicensePlate;
             return new VerifyQrResponse(true, booking.Id, booking.BookingCode, licensePlate, "QR Verified successfully.");
         }
@@ -349,7 +483,15 @@ public sealed class BookingService : IBookingService
         var booking = await _dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == id, cancellationToken)
             ?? throw new ApiException("Booking was not found.", StatusCodes.Status404NotFound);
 
-        if (booking.UserId.HasValue && booking.UserId != _currentUser.UserId)
+        var isBookingOwner = booking.UserId == _currentUser.UserId;
+        var canManageParkingLot = await _dbContext.ParkingLotStaffs.AnyAsync(
+            staff => staff.ParkingLotId == booking.ParkingLotId && staff.UserId == _currentUser.UserId,
+            cancellationToken);
+        var ownsParkingLot = await _dbContext.ParkingLots.AnyAsync(
+            parkingLot => parkingLot.Id == booking.ParkingLotId && parkingLot.OwnerId == _currentUser.UserId,
+            cancellationToken);
+
+        if (!isBookingOwner && !canManageParkingLot && !ownsParkingLot)
         {
             throw new ApiException("You cannot access this booking.", StatusCodes.Status403Forbidden);
         }

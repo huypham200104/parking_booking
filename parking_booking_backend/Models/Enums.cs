@@ -71,7 +71,8 @@ namespace parking_booking_backend.Models
     {
         Active,
         Expired,
-        Cancelled
+        Cancelled,
+        PendingPayment
     }
 
     public enum WalletTransactionType
