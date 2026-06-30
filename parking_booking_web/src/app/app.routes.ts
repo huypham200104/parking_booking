@@ -80,6 +80,8 @@ export const routes: Routes = [
       },
       { path: 'wallet', canActivate: [authGuard, roleGuard], data: { role: 0 }, loadComponent: () => import('./features/wallet/presentation/pages/wallet/wallet').then(m => m.WalletComponent), title: 'Ví ParkGo' },
       { path: 'vouchers', canActivate: [authGuard, roleGuard], data: { role: 0 }, loadComponent: () => import('./features/voucher/presentation/pages/voucher-list/voucher-list').then(m => m.VoucherListComponent), title: 'Ưu đãi ParkGo' },
+      { path: 'forbidden', loadComponent: () => import('./shared/status-page/status-page').then(m => m.StatusPageComponent), data: { code: '403' }, title: 'Không có quyền – ParkGo' },
+      { path: 'not-found', loadComponent: () => import('./shared/status-page/status-page').then(m => m.StatusPageComponent), title: 'Không tìm thấy – ParkGo' },
     ],
   },
   // Admin Routes (Role = 3)
@@ -137,6 +139,6 @@ export const routes: Routes = [
 
   {
     path: '**',
-    redirectTo: '',
+    redirectTo: 'not-found',
   },
 ];

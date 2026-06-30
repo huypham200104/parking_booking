@@ -33,6 +33,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMockDataSeeder, MockDataSeeder>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IFavouriteParkingLotService, FavouriteParkingLotService>();
 
         services.AddHostedService<BookingAutoCancelService>();
 

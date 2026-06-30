@@ -15,9 +15,7 @@
       </div>
 
       <div class="card-body">
-        <div class="loading-overlay" *ngIf="loading">
-          <div class="spinner"></div>
-        </div>
+        <div class="page-skeleton" *ngIf="loading" aria-label="Đang tải"><i></i><i></i><i></i></div>
 
         <form (ngSubmit)="saveSettings()" *ngIf="!loading">
           <div class="form-group">

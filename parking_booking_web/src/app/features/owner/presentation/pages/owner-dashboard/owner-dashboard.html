@@ -1,6 +1,6 @@
 <div class="dashboard-wrapper">
   @if (isLoading) {
-    <div class="bento-card">Đang tải dữ liệu bãi xe của bạn...</div>
+    <div class="page-skeleton" aria-label="Đang tải"><i></i><i></i><i></i><i></i></div>
   } @else if (error) {
     <div class="bento-card">{{ error }}</div>
   } @else {

@@ -1,0 +1,11 @@
+<div class="notification-center">
+  <button class="notification-trigger" type="button" (click)="toggle()" [attr.aria-expanded]="isOpen()" aria-label="Thông báo"><i class="ph ph-bell"></i>@if(unreadCount()){<span>{{unreadCount()>9?'9+':unreadCount()}}</span>}</button>
+  @if(isOpen()){
+    <button class="notification-backdrop" type="button" aria-label="Đóng thông báo" (click)="close()"></button>
+    <section class="notification-panel" aria-label="Danh sách thông báo">
+      <header><div><small>Trung tâm</small><h2>Thông báo</h2></div>@if(unreadCount()){<button type="button" (click)="markAllRead()">Đọc tất cả</button>}</header>
+      @if(isLoading()){<div class="notification-loading">Đang tải thông báo...</div>}
+      @for(item of notifications();track item.id){<button class="notification-item" type="button" [class.unread]="!item.isRead" (click)="markRead(item)"><i></i><span><strong>{{item.title}}</strong><p>{{item.message}}</p><time>{{item.createdAt|date:'HH:mm, dd/MM/yyyy':'Asia/Ho_Chi_Minh':'vi-VN'}}</time></span></button>}@empty{@if(!isLoading()){<div class="notification-empty">Bạn chưa có thông báo nào.</div>}}
+    </section>
+  }
+</div>

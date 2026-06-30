@@ -1,5 +1,6 @@
-import { ApplicationConfig, provideZonelessChangeDetection, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, provideZonelessChangeDetection, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { DATE_PIPE_DEFAULT_OPTIONS } from '@angular/common';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -21,6 +22,8 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
+    { provide: LOCALE_ID, useValue: 'vi-VN' },
+    { provide: DATE_PIPE_DEFAULT_OPTIONS, useValue: { dateFormat: 'dd/MM/yyyy HH:mm', timezone: 'Asia/Ho_Chi_Minh' } },
     { provide: AuthRepository, useClass: HttpAuthRepository },
     { provide: ParkingLotRepository, useClass: HttpParkingLotRepository },
     { provide: BookingHistoryRepository, useClass: HttpBookingHistoryRepository },

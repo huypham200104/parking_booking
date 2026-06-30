@@ -75,6 +75,11 @@ export class LoginComponent implements OnInit, OnDestroy {
   private carouselTimer: number | undefined;
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
+      this.helperMessage.set('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.');
+    } else if (this.route.snapshot.queryParamMap.get('reason') === 'session-required') {
+      this.helperMessage.set('Vui lòng đăng nhập để truy cập trang này.');
+    }
     this.carouselImages.forEach(source => { const image = new Image(); image.src = source; });
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       this.carouselTimer = window.setInterval(() => this.activeImage.update(index => (index + 1) % this.carouselImages.length), 5000);

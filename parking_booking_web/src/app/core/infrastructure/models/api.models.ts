@@ -19,6 +19,8 @@ export interface ProblemDetails {
   errors?: Record<string, string[]>;
 }
 
+export interface AppNotification { id: string; title: string; message: string; isRead: boolean; createdAt: string; }
+
 export interface ParkingLotSummary {
   id: string; name: string; address: string; latitude: number; longitude: number;
   totalSlots: number; availableSlots: number; firstBlockPrice: number; firstBlockHours: number;

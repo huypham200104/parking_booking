@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { GetParkingLotsInBoundsUseCase } from '../../../application/use-cases/get-parking-lots-in-bounds.use-case';
 import { SearchParkingLotsUseCase } from '../../../application/use-cases/search-parking-lots.use-case';
 import { MapBounds, ParkingLotSummary } from '../../../domain/entities/parking-lot';
+import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
 
 interface UserLocation {
   lat: number;
@@ -21,6 +22,7 @@ export class MapSearch implements OnInit, AfterViewInit {
   private readonly getParkingLotsInBounds = inject(GetParkingLotsInBoundsUseCase);
   private readonly searchParkingLots = inject(SearchParkingLotsUseCase);
   private readonly route = inject(ActivatedRoute);
+  private readonly api = inject(ParkingBookingApiService);
   private readonly fallbackLocation: UserLocation = { lat: 21.0285, lng: 105.8542, source: 'fallback' };
   private map: any;
   private L: any;
@@ -29,17 +31,19 @@ export class MapSearch implements OnInit, AfterViewInit {
   private loadBoundsTimer: number | undefined;
 
   readonly parkingLots = signal<ParkingLotSummary[]>([]);
+  readonly favouriteIds = signal<Set<string>>(new Set());
   readonly searchInput = signal('');
   readonly searchQuery = signal('');
   readonly searchMessage = signal('');
   readonly filteredParkingLots = computed(() => {
     const parkingLots = this.parkingLots() ?? [];
     const queryTokens = this.searchTokens(this.searchQuery());
-    if (!queryTokens.length) return parkingLots;
-    return parkingLots.filter(lot => {
+    const filtered = !queryTokens.length ? parkingLots : parkingLots.filter(lot => {
       const searchable = this.expandVietnameseAliases(this.normalizeSearch(`${lot.name} ${lot.address}`));
       return queryTokens.every(token => searchable.includes(token));
     });
+    const favourites = this.favouriteIds();
+    return [...filtered].sort((a, b) => Number(favourites.has(b.id)) - Number(favourites.has(a.id)));
   });
   readonly selectedParkingLotId = signal<string | null>(null);
   readonly isLoading = signal(true);
@@ -49,7 +53,17 @@ export class MapSearch implements OnInit, AfterViewInit {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.api.getFavouriteParkingLots().subscribe({ next: lots => this.favouriteIds.set(new Set(lots.map(lot => lot.id))) });
+  }
+
+  isFavourite(id: string): boolean { return this.favouriteIds().has(id); }
+  toggleFavourite(lot: ParkingLotSummary, event: Event): void {
+    event.stopPropagation();
+    const isFavourite = this.isFavourite(lot.id);
+    const request = isFavourite ? this.api.removeFavouriteParkingLot(lot.id) : this.api.addFavouriteParkingLot(lot.id);
+    request.subscribe({ next: () => this.favouriteIds.update(ids => { const next = new Set(ids); isFavourite ? next.delete(lot.id) : next.add(lot.id); return next; }) });
+  }
 
   async ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {

@@ -136,6 +136,10 @@
         <h3 class="card-title">Hành động nhanh</h3>
       </div>
       <div class="quick-actions">
+        <button class="action-btn" (click)="openNotificationModal()">
+          <div class="icon-circle text-orange"><i class="ph ph-bell-ringing"></i></div>
+          <span>Gửi thông báo</span>
+        </button>
         <button class="action-btn">
           <div class="icon-circle text-blue"><i class="ph ph-plus"></i></div>
           <span>Thêm bãi đỗ mới</span>
@@ -149,6 +153,58 @@
           <span>Quản lý mã giảm giá</span>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Send Notification Modal -->
+<div class="modal-backdrop" *ngIf="showNotificationModal">
+  <div class="modal-content" style="max-width: 500px; width: 100%;">
+    <div class="modal-header">
+      <h3 class="modal-title">Gửi thông báo cho người dùng</h3>
+      <button class="btn-icon" (click)="closeNotificationModal()"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="notificationSuccess" class="alert alert-success mb-4">
+        Gửi thông báo thành công!
+      </div>
+      <div *ngIf="notificationError" class="alert alert-error mb-4">
+        {{ notificationError }}
+      </div>
+      
+      <form [formGroup]="notificationForm" (ngSubmit)="submitNotification()" class="form-layout" *ngIf="!notificationSuccess">
+        <div class="form-group">
+          <label class="form-label">Số điện thoại <span class="text-error">*</span></label>
+          <input type="text" class="form-control" formControlName="phoneNumber" placeholder="Nhập số điện thoại người nhận" />
+          <div class="form-hint text-error" *ngIf="notificationForm.get('phoneNumber')?.invalid && notificationForm.get('phoneNumber')?.touched">
+            Số điện thoại không hợp lệ (10-11 số).
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Tiêu đề <span class="text-error">*</span></label>
+          <input type="text" class="form-control" formControlName="title" placeholder="Nhập tiêu đề thông báo" />
+          <div class="form-hint text-error" *ngIf="notificationForm.get('title')?.invalid && notificationForm.get('title')?.touched">
+            Vui lòng nhập tiêu đề.
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Nội dung <span class="text-error">*</span></label>
+          <textarea class="form-control" formControlName="message" rows="4" placeholder="Nhập nội dung chi tiết"></textarea>
+          <div class="form-hint text-error" *ngIf="notificationForm.get('message')?.invalid && notificationForm.get('message')?.touched">
+            Vui lòng nhập nội dung thông báo.
+          </div>
+        </div>
+        
+        <div class="modal-actions mt-6" style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" (click)="closeNotificationModal()" [disabled]="submittingNotification">Hủy</button>
+          <button type="submit" class="btn btn-primary" [disabled]="submittingNotification || notificationForm.invalid">
+            <i class="ph ph-spinner-gap spin" *ngIf="submittingNotification"></i>
+            <span>{{ submittingNotification ? 'Đang gửi...' : 'Gửi thông báo' }}</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

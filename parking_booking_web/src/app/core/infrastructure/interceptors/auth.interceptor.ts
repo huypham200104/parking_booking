@@ -22,7 +22,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       if (error.status === 401 && !request.url.startsWith('/api/auth/')) {
         const returnUrl = router.url.startsWith('/auth/') ? '/' : router.url;
         sessions.clear();
-        void router.navigate(['/auth/login'], { queryParams: { returnUrl } });
+        void router.navigate(['/auth/login'], { queryParams: { returnUrl, reason: 'session-expired' } });
       }
 
       return throwError(() => error);

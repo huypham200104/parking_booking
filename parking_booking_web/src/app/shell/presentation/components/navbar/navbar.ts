@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AccountFacade } from '../../../../features/account/application/account.facade';
 import { CurrentUser } from '../../../../features/account/domain/entities/current-user';
+import { NotificationCenterComponent } from '../../../../shared/notification-center/notification-center';
 
 /**
  * NavbarComponent – navigation UI.
@@ -11,7 +12,7 @@ import { CurrentUser } from '../../../../features/account/domain/entities/curren
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, NotificationCenterComponent],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
 })

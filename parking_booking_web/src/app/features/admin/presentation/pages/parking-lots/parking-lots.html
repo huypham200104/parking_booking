@@ -7,9 +7,7 @@
   </div>
 
   <div class="data-card">
-    <div class="loading-overlay" *ngIf="loading">
-      <div class="spinner"></div>
-    </div>
+    <div class="page-skeleton" *ngIf="loading" aria-label="Đang tải"><i></i><i></i><i></i><i></i></div>
 
     <div class="error-state" *ngIf="error">
       <i class="ph ph-warning-circle"></i>
@@ -17,7 +15,7 @@
       <button class="btn btn-outline" (click)="loadData()">Thử lại</button>
     </div>
 
-    <div class="table-container" *ngIf="!error">
+    <div class="table-container" *ngIf="!error && !loading">
       <table class="premium-table">
         <thead>
           <tr>

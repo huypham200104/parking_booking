@@ -6,11 +6,12 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const sessions = inject(AuthSessionService);
   const router = inject(Router);
 
-  if (sessions.isAuthenticated()) {
+  const hadSession = sessions.session() !== null;
+  if (sessions.isSessionValid()) {
     return true;
   }
 
   return router.createUrlTree(['/auth/login'], {
-    queryParams: { returnUrl: state.url },
+    queryParams: { returnUrl: state.url, reason: hadSession ? 'session-expired' : 'session-required' },
   });
 };

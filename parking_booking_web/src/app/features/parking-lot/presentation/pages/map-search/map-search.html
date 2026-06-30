@@ -67,7 +67,7 @@
             >
             <span class="parking-list__top">
               <strong>{{ lot.name }}</strong>
-              <em>{{ lot.distanceKm === null ? 'N/A' : lot.distanceKm.toFixed(2) + 'km' }}</em>
+              <span><em>{{ lot.distanceKm === null ? 'N/A' : lot.distanceKm.toFixed(2) + 'km' }}</em><button class="favorite-button" type="button" (click)="toggleFavourite(lot,$event)" [class.active]="isFavourite(lot.id)" [attr.aria-label]="isFavourite(lot.id)?'Bỏ yêu thích':'Thêm vào yêu thích'">{{isFavourite(lot.id)?'♥':'♡'}}</button></span>
             </span>
             <span class="parking-list__address">{{ lot.address }}</span>
             <span class="parking-list__meta">

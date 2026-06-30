@@ -38,6 +38,7 @@
     <!-- Desktop Actions -->
     <div class="navbar__actions">
       @if (isAuthenticated()) {
+        <app-notification-center />
         <div class="account-menu">
           <button class="account-menu__trigger" type="button" aria-haspopup="menu">
             <span class="account-menu__avatar">{{ initials() }}</span>

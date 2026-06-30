@@ -28,7 +28,7 @@ public sealed class ApiInfrastructureTests : IClassFixture<ParkingBookingApiFact
             .Where(route => route is not null && (route.TrimStart('/').StartsWith("api/") || route.TrimStart('/').StartsWith("health/")))
             .ToList();
 
-        Assert.Equal(59, routes.Count);
+        Assert.Equal(65, routes.Count);
         Assert.Contains("api/bookings/recent-parking-lots", routes);
         Assert.Contains("api/bookings/admin/all", routes);
         Assert.Contains("api/bookings/{id:guid}/no-show", routes);
@@ -62,6 +62,8 @@ public sealed class ApiInfrastructureTests : IClassFixture<ParkingBookingApiFact
     [InlineData("/api/wallets/me")]
     [InlineData("/api/layout-templates")]
     [InlineData("/api/vouchers/valid")]
+    [InlineData("/api/notifications")]
+    [InlineData("/api/favourites")]
     public async Task Protected_get_endpoints_reject_anonymous_requests(string path)
     {
         using var client = _factory.CreateClient();

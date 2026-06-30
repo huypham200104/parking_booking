@@ -1,11 +1,19 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './api-client.service';
-import { Booking, BookingHistoryItem, LayoutTemplate, OwnerStaffAssignment, PaginationResponse, ParkingFloor, ParkingLotDetail, ParkingLotSummary, ParkingSlot, Review, StaffBooking, User, AdminUser, Vehicle, VerifyBookingQr, Voucher, VoucherRequest, Wallet } from '../models/api.models';
+import { AppNotification, Booking, BookingHistoryItem, LayoutTemplate, OwnerStaffAssignment, PaginationResponse, ParkingFloor, ParkingLotDetail, ParkingLotSummary, ParkingSlot, Review, StaffBooking, User, AdminUser, Vehicle, VerifyBookingQr, Voucher, VoucherRequest, Wallet } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ParkingBookingApiService {
   private readonly api = inject(ApiClient);
+
+  getNotifications(unreadOnly = false) { return this.api.get<AppNotification[]>('/notifications', new HttpParams().set('unreadOnly', unreadOnly)); }
+  markNotificationRead(id: string) { return this.api.put<{ read: boolean }>(`/notifications/${id}/read`, {}); }
+  markAllNotificationsRead() { return this.api.put<{ read: boolean }>('/notifications/read-all', {}); }
+  sendNotificationToUser(request: { phoneNumber: string; title: string; message: string }) { return this.api.post<{ sent: boolean }>('/notifications/send', request); }
+  getFavouriteParkingLots() { return this.api.get<ParkingLotSummary[]>('/favourites'); }
+  addFavouriteParkingLot(id: string) { return this.api.post<{ favourite: boolean }>(`/favourites/${id}`, {}); }
+  removeFavouriteParkingLot(id: string) { return this.api.delete<{ favourite: boolean }>(`/favourites/${id}`); }
 
   getCurrentUser() { return this.api.get<User>('/users/me'); }
   updateMe(request: { fullName: string }) { return this.api.put<User>('/users/me', request); }

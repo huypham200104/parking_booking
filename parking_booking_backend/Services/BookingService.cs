@@ -264,6 +264,22 @@ public sealed class BookingService : IBookingService
         };
 
         _dbContext.Bookings.Add(booking);
+        if (booking.UserId.HasValue)
+        {
+            AddNotification(booking.UserId.Value, "Đặt chỗ thành công",
+                $"Mã {booking.BookingCode} đã được giữ. Vui lòng check-in trước {BookingPolicy.GetCheckInDeadline(booking.BookingTimestamp):HH:mm}.");
+        }
+
+        AddNotification(parkingLot.OwnerId, "Có lượt đặt chỗ mới",
+            $"Lượt {booking.BookingCode} vừa đặt chỗ tại {parkingLot.Name}.");
+        var staffUserIds = await _dbContext.ParkingLotStaffs
+            .Where(item => item.ParkingLotId == parkingLot.Id)
+            .Select(item => item.UserId)
+            .ToListAsync(cancellationToken);
+        foreach (var staffUserId in staffUserIds)
+        {
+            AddNotification(staffUserId, "Có xe sắp đến", $"Lượt {booking.BookingCode} đang chờ check-in tại bãi của bạn.");
+        }
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -281,6 +297,10 @@ public sealed class BookingService : IBookingService
 
         booking.Status = BookingStatus.CheckedIn;
         booking.CheckInTimestamp = DateTime.UtcNow;
+        if (booking.UserId.HasValue)
+        {
+            AddNotification(booking.UserId.Value, "Check-in thành công", $"Lượt {booking.BookingCode} đã được check-in.");
+        }
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return ToResponse(booking);
@@ -397,6 +417,10 @@ public sealed class BookingService : IBookingService
         booking.Status = BookingStatus.Cancelled;
         slot.Status = ParkingSlotStatus.Available;
         parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
+        if (booking.UserId.HasValue)
+        {
+            AddNotification(booking.UserId.Value, "Đã hủy đặt chỗ", $"Lượt {booking.BookingCode} đã được hủy.");
+        }
 
         if (booking.UserId.HasValue && await ShouldLockUserAfterViolationAsync(booking, cancellationToken))
         {
@@ -429,6 +453,11 @@ public sealed class BookingService : IBookingService
         booking.Status = BookingStatus.NoShow;
         slot.Status = ParkingSlotStatus.Available;
         parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
+        if (booking.UserId.HasValue)
+        {
+            AddNotification(booking.UserId.Value, "Không check-in đúng hạn",
+                $"Lượt {booking.BookingCode} được ghi nhận là không đến và tính vào chính sách vi phạm.");
+        }
 
         if (booking.UserId.HasValue && await ShouldLockUserAfterViolationAsync(booking, cancellationToken))
         {
@@ -598,6 +627,15 @@ public sealed class BookingService : IBookingService
 
         return BookingPolicy.ShouldLock(previousViolationCount + 1);
     }
+
+    private void AddNotification(Guid userId, string title, string message)
+        => _dbContext.Notifications.Add(new Notification
+        {
+            UserId = userId,
+            Title = title,
+            Message = message,
+            IsRead = false
+        });
 
     private static BookingResponse ToResponse(Booking booking)
         => new(

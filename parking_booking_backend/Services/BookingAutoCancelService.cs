@@ -67,6 +67,31 @@ public class BookingAutoCancelService : BackgroundService
         var now = DateTime.UtcNow;
         var thresholdTime = now.Subtract(BookingPolicy.CheckInWindow);
 
+        var reminderCutoff = now.AddMinutes(2);
+        var reminderBookings = await dbContext.Bookings
+            .Where(booking => booking.Status == BookingStatus.Pending
+                && booking.UserId.HasValue
+                && booking.BookingTimestamp > thresholdTime
+                && booking.BookingTimestamp.AddMinutes(10) <= reminderCutoff)
+            .ToListAsync(cancellationToken);
+        foreach (var booking in reminderBookings)
+        {
+            var message = $"Lượt {booking.BookingCode} còn dưới 2 phút để check-in.";
+            var alreadySent = await dbContext.Notifications.AnyAsync(
+                item => item.UserId == booking.UserId && item.Title == "Sắp hết hạn check-in" && item.Message == message,
+                cancellationToken);
+            if (!alreadySent)
+            {
+                dbContext.Notifications.Add(new Notification
+                {
+                    UserId = booking.UserId!.Value,
+                    Title = "Sắp hết hạn check-in",
+                    Message = message,
+                    IsRead = false
+                });
+            }
+        }
+
         var expiredBookings = await dbContext.Bookings
             .Where(b => b.Status == BookingStatus.Pending && b.BookingTimestamp <= thresholdTime)
             .Include(b => b.User)
@@ -76,6 +101,7 @@ public class BookingAutoCancelService : BackgroundService
 
         if (!expiredBookings.Any())
         {
+            await dbContext.SaveChangesAsync(cancellationToken);
             return;
         }
 
@@ -102,6 +128,16 @@ public class BookingAutoCancelService : BackgroundService
         foreach (var booking in expiredBookings)
         {
             booking.Status = BookingStatus.NoShow;
+            if (booking.UserId.HasValue)
+            {
+                dbContext.Notifications.Add(new Notification
+                {
+                    UserId = booking.UserId.Value,
+                    Title = "Đặt chỗ đã hết hạn",
+                    Message = $"Lượt {booking.BookingCode} đã bị hủy vì không check-in đúng hạn.",
+                    IsRead = false
+                });
+            }
             if (booking.ParkingSlot != null)
             {
                 booking.ParkingSlot.Status = ParkingSlotStatus.Available;
@@ -123,7 +159,18 @@ public class BookingAutoCancelService : BackgroundService
             if (BookingPolicy.ShouldLock(previousCount + userBookings.Count()))
             {
                 var user = userBookings.First().User!;
+                var wasLocked = user.IsLocked;
                 user.IsLocked = true;
+                if (!wasLocked)
+                {
+                    dbContext.Notifications.Add(new Notification
+                    {
+                        UserId = user.Id,
+                        Title = "Tài khoản đã bị khóa",
+                        Message = "Tài khoản bị khóa do có quá 3 lần hủy hoặc không check-in trong 30 ngày.",
+                        IsRead = false
+                    });
+                }
                 _logger.LogWarning(
                     "User {UserId} has been locked after more than {AllowedViolations} booking violations in 30 days.",
                     userBookings.Key,

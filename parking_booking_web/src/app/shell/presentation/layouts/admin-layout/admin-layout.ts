@@ -4,11 +4,12 @@ import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AccountFacade } from '../../../../features/account/application/account.facade';
+import { NotificationCenterComponent } from '../../../../shared/notification-center/notification-center';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NotificationCenterComponent],
   templateUrl: './admin-layout.html',
   styleUrls: ['./admin-layout.scss']
 })

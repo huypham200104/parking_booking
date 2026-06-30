@@ -8,6 +8,22 @@ export class AuthSessionService {
   readonly session = this.state.asReadonly();
   readonly isAuthenticated = computed(() => this.state() !== null);
 
+  isSessionValid(): boolean {
+    const session = this.state();
+    if (!session) return false;
+    try {
+      const payload = JSON.parse(atob(session.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: number };
+      if (payload.exp && payload.exp * 1000 <= Date.now()) {
+        this.clear();
+        return false;
+      }
+      return true;
+    } catch {
+      this.clear();
+      return false;
+    }
+  }
+
   save(session: AuthSession, persistent: boolean): void {
     this.clearStorage();
     (persistent ? localStorage : sessionStorage).setItem(this.storageKey, JSON.stringify(session));
