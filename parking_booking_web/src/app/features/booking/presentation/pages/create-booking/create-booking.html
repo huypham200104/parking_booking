@@ -42,6 +42,13 @@
     } @else if (createdBooking(); as booking) {
       <div class="booking-success">
         <p class="booking-kicker">Đặt chỗ thành công</p><h1>Chỗ đỗ đã được giữ</h1>
+        <dl class="booking-times">
+          <div><dt>Thời gian đặt</dt><dd>{{ bookingDateTime(booking.bookingTimestamp) }}</dd></div>
+          <div><dt>Check-in trước</dt><dd>{{ bookingDateTime(booking.checkInDeadline) }}</dd></div>
+        </dl>
+        <div class="booking-policy-warning" role="note">
+          Nếu bạn hủy đặt chỗ hoặc không check-in đúng hạn quá 3 lần trong 30 ngày, tài khoản sẽ bị khóa.
+        </div>
         @if (!isHoldExpired()) {
           <div class="booking-countdown" role="timer" aria-live="off"><span>Thời gian giữ chỗ còn lại</span><strong>{{ countdownLabel() }}</strong></div>
           <p>Đưa mã QR này cho nhân viên khi vào bãi.</p>

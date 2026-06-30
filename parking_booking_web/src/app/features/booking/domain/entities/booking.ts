@@ -2,4 +2,4 @@ export interface BookingParkingLot { id: string; name: string; address: string; 
 export interface BookingFloor { id: string; parkingLotId: string; floorName: string; }
 export interface BookingSlot { id: string; parkingFloorId: string; slotName: string; status: number; vehicleType: number; }
 export interface BookingVehicle { id: string; licensePlate: string; vehicleType: number; isDefault: boolean; }
-export interface CreatedBooking { id: string; bookingCode: string; bookingTimestamp: string; status: number; }
+export interface CreatedBooking { id: string; bookingCode: string; bookingTimestamp: string; checkInDeadline: string; status: number; }

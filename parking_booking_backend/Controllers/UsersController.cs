@@ -46,4 +46,12 @@ public sealed class UsersController : ControllerBase
         await _userService.ToggleLockAsync(id, cancellationToken);
         return Ok(ApiResponse<object>.Ok(null!, "User lock status toggled successfully."));
     }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<AdminUserResponse>>> CreateUser(CreateUserRequest request, CancellationToken cancellationToken)
+    {
+        var user = await _userService.CreateUserAsync(request, cancellationToken);
+        return Ok(ApiResponse<AdminUserResponse>.Ok(user, "User created successfully."));
+    }
 }

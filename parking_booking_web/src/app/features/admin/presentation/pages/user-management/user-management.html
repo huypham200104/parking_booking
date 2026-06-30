@@ -5,10 +5,13 @@
       <p class="page-subtitle">Quản lý tài khoản và phân quyền người dùng trong hệ thống.</p>
     </div>
     <div class="header-actions">
-      <label class="filter-toggle">
+      <label class="filter-toggle" style="margin-right: 16px;">
         <input type="checkbox" [(ngModel)]="filterPenalty" (change)="pageIndex=1; loadUsers()" />
         <span>Chỉ hiện user có lượt phạt > 0</span>
       </label>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <i class="ph ph-plus"></i> Thêm người dùng
+      </button>
     </div>
   </div>
 
@@ -120,6 +123,51 @@
           <i class="ph ph-caret-right"></i>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Create User -->
+<div class="modal-overlay" *ngIf="showModal" (click)="!modalSaving && closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Thêm người dùng mới</h2>
+      <button class="btn-icon" (click)="closeModal()" [disabled]="modalSaving"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="error-banner" *ngIf="modalError">{{ modalError }}</div>
+      
+      <div class="form-group">
+        <label>Họ và tên <span class="required">*</span></label>
+        <input type="text" class="form-control" [(ngModel)]="newUser.fullName" placeholder="Nhập họ và tên" [disabled]="modalSaving">
+      </div>
+      
+      <div class="form-group">
+        <label>Số điện thoại <span class="required">*</span></label>
+        <input type="text" class="form-control" [(ngModel)]="newUser.phoneNumber" placeholder="Nhập số điện thoại" [disabled]="modalSaving">
+      </div>
+      
+      <div class="form-group">
+        <label>Vai trò <span class="required">*</span></label>
+        <select class="form-control" [(ngModel)]="newUser.role" [disabled]="modalSaving">
+          <option [ngValue]="0">Khách hàng (Customer)</option>
+          <option [ngValue]="1">Chủ bãi (Owner)</option>
+          <option [ngValue]="2">Nhân viên (Guard)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Mật khẩu mặc định</label>
+        <input type="text" class="form-control" [(ngModel)]="newUser.password" disabled>
+        <small class="help-text text-muted">Mật khẩu này sẽ được dùng để đăng nhập lần đầu.</small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeModal()" [disabled]="modalSaving">Hủy</button>
+      <button class="btn btn-primary" (click)="saveUser()" [disabled]="modalSaving">
+        <span *ngIf="modalSaving"><i class="ph ph-spinner ph-spin"></i> Đang lưu...</span>
+        <span *ngIf="!modalSaving">Tạo người dùng</span>
+      </button>
     </div>
   </div>
 </div>

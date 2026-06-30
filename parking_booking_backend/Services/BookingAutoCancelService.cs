@@ -64,11 +64,14 @@ public class BookingAutoCancelService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
+        var now = DateTime.UtcNow;
+        var thresholdTime = now.Subtract(BookingPolicy.CheckInWindow);
 
         var expiredBookings = await dbContext.Bookings
             .Where(b => b.Status == BookingStatus.Pending && b.BookingTimestamp <= thresholdTime)
             .Include(b => b.User)
+            .Include(b => b.ParkingSlot)
+            .Include(b => b.ParkingLot)
             .ToListAsync(cancellationToken);
 
         if (!expiredBookings.Any())
@@ -76,26 +79,55 @@ public class BookingAutoCancelService : BackgroundService
             return;
         }
 
-        var today = DateTime.UtcNow.Date;
+        var expiredBookingIds = expiredBookings.Select(booking => booking.Id).ToList();
+        var affectedUserIds = expiredBookings
+            .Where(booking => booking.UserId.HasValue)
+            .Select(booking => booking.UserId!.Value)
+            .Distinct()
+            .ToList();
+
+        var windowStart = now.Subtract(BookingPolicy.ViolationWindow);
+        var previousViolationCounts = affectedUserIds.Count == 0
+            ? new Dictionary<Guid, int>()
+            : await dbContext.Bookings
+                .Where(booking => booking.UserId.HasValue
+                    && affectedUserIds.Contains(booking.UserId.Value)
+                    && !expiredBookingIds.Contains(booking.Id)
+                    && booking.BookingTimestamp >= windowStart
+                    && (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.NoShow))
+                .GroupBy(booking => booking.UserId!.Value)
+                .Select(group => new { UserId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.UserId, item => item.Count, cancellationToken);
 
         foreach (var booking in expiredBookings)
         {
-            booking.Status = BookingStatus.Cancelled;
-
-            if (booking.User != null && !booking.User.IsLocked)
+            booking.Status = BookingStatus.NoShow;
+            if (booking.ParkingSlot != null)
             {
-                // Count cancelled bookings today for this user (not including this one yet)
-                var cancelledCountToday = await dbContext.Bookings
-                    .Where(b => b.UserId == booking.UserId 
-                                && b.Status == BookingStatus.Cancelled
-                                && b.BookingTimestamp.Date == today)
-                    .CountAsync(cancellationToken);
+                booking.ParkingSlot.Status = ParkingSlotStatus.Available;
+            }
 
-                if (cancelledCountToday + 1 >= 3)
-                {
-                    booking.User.IsLocked = true;
-                    _logger.LogWarning($"User {booking.UserId} has been locked due to 3 or more cancellations today.");
-                }
+            if (booking.ParkingLot != null)
+            {
+                booking.ParkingLot.AvailableSlots = Math.Min(
+                    booking.ParkingLot.TotalSlots,
+                    booking.ParkingLot.AvailableSlots + 1);
+            }
+        }
+
+        foreach (var userBookings in expiredBookings
+                     .Where(booking => booking.UserId.HasValue && booking.User != null)
+                     .GroupBy(booking => booking.UserId!.Value))
+        {
+            var previousCount = previousViolationCounts.GetValueOrDefault(userBookings.Key);
+            if (BookingPolicy.ShouldLock(previousCount + userBookings.Count()))
+            {
+                var user = userBookings.First().User!;
+                user.IsLocked = true;
+                _logger.LogWarning(
+                    "User {UserId} has been locked after more than {AllowedViolations} booking violations in 30 days.",
+                    userBookings.Key,
+                    BookingPolicy.AllowedViolations);
             }
         }
 

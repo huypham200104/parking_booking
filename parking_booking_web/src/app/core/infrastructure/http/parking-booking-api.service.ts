@@ -11,15 +11,17 @@ export class ParkingBookingApiService {
   updateMe(request: { fullName: string }) { return this.api.put<User>('/users/me', request); }
   getAllUsers(page = 1, size = 10, hasPenalty?: boolean) {
     let params = new HttpParams().set('page', page).set('size', size);
-    if (hasPenalty) params = params.set('hasPenalty', hasPenalty);
+    if (hasPenalty !== undefined) params = params.set('hasPenalty', hasPenalty);
     return this.api.get<PaginationResponse<AdminUser>>('/users', params);
   }
+  createUser(request: any) { return this.api.post<AdminUser>('/users', request); }
   toggleUserLock(id: string) { return this.api.put<{ success: boolean }>(`/users/${id}/lock`, {}); }
   getAllAdminParkingLots(page = 1, size = 10, keyword?: string) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (keyword) params = params.set('keyword', keyword);
     return this.api.get<PaginationResponse<ParkingLotSummary>>('/parking-lots/admin/all', params);
   }
+  approveParkingLot(id: string) { return this.api.put<{ approved: boolean }>(`/parking-lots/${id}/approve`, {}); }
   createParkingLot(request: { name: string; address: string; ownerId?: string | null; latitude: number; longitude: number; firstBlockPrice: number; firstBlockHours: number; is24_7: boolean; contactPhone: string }) {
     return this.api.post<ParkingLotDetail>('/parking-lots', request);
   }
@@ -59,6 +61,7 @@ export class ParkingBookingApiService {
   getRecentCompletedParkingLots() { return this.api.get<ParkingLotSummary[]>('/bookings/recent-parking-lots'); }
   getStaffBookings() { return this.api.get<StaffBooking[]>('/bookings/staff'); }
   getAllAdminBookings(page = 1, size = 10) { return this.api.get<PaginationResponse<StaffBooking>>('/bookings/admin/all', new HttpParams().set('page', page).set('size', size)); }
+  markNoShow(id: string) { return this.api.post<{ noShow: boolean }>(`/bookings/${id}/no-show`, {}); }
   getBookingQr(id: string) { return this.api.get<{ qrToken: string }>(`/bookings/${id}/qr`); }
   verifyBookingQr(qrToken: string) { return this.api.post<VerifyBookingQr>('/bookings/verify-qr', { qrToken }); }
   checkIn(id: string) { return this.api.post<Booking>(`/bookings/${id}/check-in`); }

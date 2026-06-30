@@ -67,10 +67,21 @@ export class Bookings implements OnInit {
   prevPage(): void { if (this.pageIndex > 1) this.goToPage(this.pageIndex - 1); }
 
   getPages(): number[] {
-    const start = Math.max(1, this.pageIndex - 2);
-    const end = Math.min(this.totalPages, start + 4);
-    const adjustedStart = Math.max(1, end - 4);
-    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i);
+    const total = this.totalPages || 0;
+    if (total === 0) return [];
+    
+    if (total <= 10) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    
+    let start = Math.max(1, this.pageIndex - 2);
+    let end = Math.min(total, start + 4);
+    
+    if (end - start < 4) {
+      start = Math.max(1, end - 4);
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
   statusLabel(status: string | number): string {
@@ -81,5 +92,35 @@ export class Bookings implements OnInit {
   statusClass(status: string | number): string {
     const value = typeof status === 'number' ? status : { Pending: 0, CheckedIn: 1, Completed: 2, Cancelled: 3, NoShow: 4 }[status] ?? -1;
     return ['status-pending', 'status-checkedin', 'status-completed', 'status-cancelled', 'status-noshow'][value] ?? 'status-unknown';
+  }
+
+  // Modal logic
+  showModal = false;
+  modalBooking: StaffBooking | null = null;
+
+  openViewModal(booking: StaffBooking) {
+    this.modalBooking = booking;
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.modalBooking = null;
+  }
+
+  markNoShow(booking: StaffBooking) {
+    if (confirm(`Bạn có chắc muốn đánh dấu lượt đặt chỗ ${booking.bookingCode} là Không đến (No-Show)?`)) {
+      this.apiService.markNoShow(booking.id).subscribe({
+        next: () => {
+          this.loadData();
+          if (this.modalBooking && this.modalBooking.id === booking.id) {
+            this.closeModal();
+          }
+        },
+        error: (err) => {
+          alert('Có lỗi xảy ra: ' + (err.error?.message || err.message));
+        }
+      });
+    }
   }
 }

@@ -15,15 +15,16 @@ public static class RedisServiceCollectionExtensions
         var connectionString = configuration["Redis:ConnectionString"] 
             ?? throw new InvalidOperationException("Redis connection string is missing.");
 
-        // Khởi tạo ConnectionMultiplexer (Singleton)
-        var connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
-        services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
+        // Connect lazily so startup and integration tests can replace Redis dependencies.
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
 
         // Khởi tạo RedLock Factory
-        var multiplexers = new List<RedLockMultiplexer> { connectionMultiplexer };
-        var redLockFactory = RedLockFactory.Create(multiplexers);
-
-        services.AddSingleton<IDistributedLockFactory>(redLockFactory);
+        services.AddSingleton<IDistributedLockFactory>(provider =>
+        {
+            var connectionMultiplexer = provider.GetRequiredService<IConnectionMultiplexer>();
+            var multiplexers = new List<RedLockMultiplexer> { (ConnectionMultiplexer)connectionMultiplexer };
+            return RedLockFactory.Create(multiplexers);
+        });
 
         return services;
     }

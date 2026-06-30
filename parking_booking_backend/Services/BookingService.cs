@@ -17,7 +17,7 @@ public sealed class BookingService : IBookingService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUser;
-    private readonly IDistributedLockFactory _lockFactory;
+    private readonly IDistributedLockFactory? _lockFactory;
     private readonly IConfiguration _configuration;
 
     public BookingService(ApplicationDbContext dbContext, ICurrentUserService currentUser, IDistributedLockFactory lockFactory, IConfiguration configuration)
@@ -26,6 +26,19 @@ public sealed class BookingService : IBookingService
         _currentUser = currentUser;
         _lockFactory = lockFactory;
         _configuration = configuration;
+    }
+
+    // Lightweight constructor for isolated service tests. Production DI always uses the full constructor above.
+    public BookingService(ApplicationDbContext dbContext, ICurrentUserService currentUser)
+    {
+        _dbContext = dbContext;
+        _currentUser = currentUser;
+        _configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:Key"] = "integration-test-jwt-key-at-least-32-characters",
+            ["Jwt:Issuer"] = "ParkingBookingBackend",
+            ["Jwt:Audience"] = "ParkingBookingClient"
+        }).Build();
     }
 
     public async Task<IReadOnlyCollection<BookingHistoryResponse>> GetMineAsync(CancellationToken cancellationToken)
@@ -159,12 +172,17 @@ public sealed class BookingService : IBookingService
         var currentUser = await _dbContext.Users.FindAsync(new object[] { _currentUser.UserId }, cancellationToken);
         if (currentUser?.IsLocked == true)
         {
-            throw new ApiException("Tài khoản của bạn đã bị khóa do hủy quá nhiều lần trong ngày. Không thể tạo Booking mới.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Tài khoản của bạn đã bị khóa do hủy đặt chỗ hoặc không check-in đúng hạn quá 3 lần trong 30 ngày. Không thể tạo đặt chỗ mới.", StatusCodes.Status403Forbidden);
         }
 
         if (!request.VehicleId.HasValue && string.IsNullOrWhiteSpace(request.GuestLicensePlate))
         {
             throw new ApiException("Either vehicleId or guestLicensePlate is required.");
+        }
+
+        if (_lockFactory is null)
+        {
+            return await CreateUnderSlotLockAsync(request, cancellationToken);
         }
 
         var resource = $"booking:slot:{request.ParkingSlotId}";
@@ -179,6 +197,12 @@ public sealed class BookingService : IBookingService
         {
             throw new ApiException("Chỗ đỗ này đang được người khác thao tác. Vui lòng thử lại sau giây lát.", StatusCodes.Status409Conflict);
         }
+
+        return await CreateUnderSlotLockAsync(request, cancellationToken);
+    }
+
+    private async Task<BookingResponse> CreateUnderSlotLockAsync(CreateBookingRequest request, CancellationToken cancellationToken)
+    {
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -374,14 +398,39 @@ public sealed class BookingService : IBookingService
         slot.Status = ParkingSlotStatus.Available;
         parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
 
-        var today = DateTime.UtcNow.Date;
-        var cancelledCountToday = await _dbContext.Bookings
-            .Where(b => b.UserId == booking.UserId 
-                        && b.Status == BookingStatus.Cancelled
-                        && b.BookingTimestamp.Date == today)
-            .CountAsync(cancellationToken);
+        if (booking.UserId.HasValue && await ShouldLockUserAfterViolationAsync(booking, cancellationToken))
+        {
+            var user = await _dbContext.Users.FindAsync(new object?[] { booking.UserId }, cancellationToken);
+            if (user != null)
+            {
+                user.IsLocked = true;
+            }
+        }
 
-        if (cancelledCountToday + 1 >= 3)
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task MarkNoShowAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
+        var booking = await _dbContext.Bookings.FindAsync(new object?[] { id }, cancellationToken);
+        if (booking == null) throw new ApiException("Booking not found", StatusCodes.Status404NotFound);
+
+        if (booking.Status != BookingStatus.Pending)
+        {
+            throw new ApiException("Chỉ có thể đánh dấu Không đến cho những lượt đặt chỗ đang chờ.", StatusCodes.Status409Conflict);
+        }
+
+        var parkingLot = await _dbContext.ParkingLots.FirstAsync(p => p.Id == booking.ParkingLotId, cancellationToken);
+        var slot = await _dbContext.ParkingSlots.FirstAsync(s => s.Id == booking.ParkingSlotId, cancellationToken);
+
+        booking.Status = BookingStatus.NoShow;
+        slot.Status = ParkingSlotStatus.Available;
+        parkingLot.AvailableSlots = Math.Min(parkingLot.TotalSlots, parkingLot.AvailableSlots + 1);
+
+        if (booking.UserId.HasValue && await ShouldLockUserAfterViolationAsync(booking, cancellationToken))
         {
             var user = await _dbContext.Users.FindAsync(new object?[] { booking.UserId }, cancellationToken);
             if (user != null)
@@ -532,6 +581,24 @@ public sealed class BookingService : IBookingService
     private static string CreateVietQrUrl(string bookingCode, decimal amount)
         => $"https://img.vietqr.io/image/demo-bank-demo-account-compact2.png?amount={amount:0}&addInfo=PKB%20{bookingCode}";
 
+    private async Task<bool> ShouldLockUserAfterViolationAsync(Booking currentBooking, CancellationToken cancellationToken)
+    {
+        if (!currentBooking.UserId.HasValue)
+        {
+            return false;
+        }
+
+        var windowStart = DateTime.UtcNow.Subtract(BookingPolicy.ViolationWindow);
+        var previousViolationCount = await _dbContext.Bookings
+            .Where(booking => booking.Id != currentBooking.Id
+                && booking.UserId == currentBooking.UserId
+                && booking.BookingTimestamp >= windowStart
+                && (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.NoShow))
+            .CountAsync(cancellationToken);
+
+        return BookingPolicy.ShouldLock(previousViolationCount + 1);
+    }
+
     private static BookingResponse ToResponse(Booking booking)
         => new(
             booking.Id,
@@ -542,6 +609,7 @@ public sealed class BookingService : IBookingService
             booking.ParkingSlotId,
             booking.BookingCode,
             booking.BookingTimestamp,
+            BookingPolicy.GetCheckInDeadline(booking.BookingTimestamp),
             booking.CheckInTimestamp,
             booking.CheckOutTimestamp,
             booking.Status,

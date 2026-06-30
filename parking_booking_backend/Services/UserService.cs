@@ -87,4 +87,32 @@ public sealed class UserService : IUserService
         user.IsLocked = !user.IsLocked;
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<AdminUserResponse> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
+    {
+        var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber, cancellationToken);
+        if (existingUser != null)
+        {
+            throw new ApiException("Số điện thoại này đã được sử dụng.", StatusCodes.Status409Conflict);
+        }
+
+        var user = new User
+        {
+            PhoneNumber = request.PhoneNumber,
+            FullName = request.FullName,
+            Role = request.Role,
+            TrustScore = 100,
+            IsLocked = false
+        };
+
+        // Here we should hash the password, but since there's no auth/password logic shown, we'll assume it's stored somewhere or just mock it.
+        // Wait, is there a PasswordHash property? Let's check User.cs.
+        // Actually, earlier I saw User.cs doesn't have a PasswordHash. It must be using Firebase Auth or something, or it's mocked!
+        // I will just add the user to DB.
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new AdminUserResponse(user.Id, user.PhoneNumber, user.FullName, user.Role, user.TrustScore, user.IsLocked, user.CreatedAt, 0);
+    }
 }

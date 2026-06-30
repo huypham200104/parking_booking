@@ -1,9 +1,19 @@
 using parking_booking_backend.Extensions;
+using parking_booking_backend.Health;
 using parking_booking_backend.Interfaces;
 using parking_booking_backend.Middlewares;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+
+DotEnvLoader.LoadForDevelopment();
 
 // Khởi tạo 1 object builder là 1 cái kho chứa khổng lồ
 var builder = WebApplication.CreateBuilder(args);
+
+_ = JwtConfiguration.RequireSecureKey(builder.Configuration);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -11,6 +21,48 @@ builder.Logging.AddConsole();
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var value)
+            ? Math.Max(1, (int)Math.Ceiling(value.TotalSeconds))
+            : 60;
+        context.HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            status = StatusCodes.Status429TooManyRequests,
+            title = "Too Many Requests",
+            detail = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.",
+            retryAfterSeconds = retryAfter
+        }, cancellationToken);
+    };
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var path = httpContext.Request.Path.Value ?? string.Empty;
+        var method = httpContext.Request.Method;
+        var identity = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+        var (policy, permitLimit, window) = path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
+            ? ("auth-login", 5, TimeSpan.FromMinutes(10))
+            : path.Equals("/api/auth/verify", StringComparison.OrdinalIgnoreCase)
+                ? ("auth-verify", 10, TimeSpan.FromMinutes(10))
+                : HttpMethods.IsPost(method) || HttpMethods.IsPut(method) || HttpMethods.IsDelete(method) || HttpMethods.IsPatch(method)
+                    ? ("write", 30, TimeSpan.FromMinutes(1))
+                    : ("default", 120, TimeSpan.FromMinutes(1));
+
+        return RateLimitPartition.GetFixedWindowLimiter($"{policy}:{identity}", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = window,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDev", policy =>
@@ -23,6 +75,9 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddRedisServices(builder.Configuration);
 builder.Services.AddParkingBookingServices(builder.Configuration);
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+    .AddCheck<RedisHealthCheck>("redis", tags: ["ready"]);
 
 // object build đã được đóng gói xong và bắt đầu 
 var app = builder.Build();
@@ -53,9 +108,28 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // API 
 app.MapControllers();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = WriteHealthResponseAsync
+}).AllowAnonymous().DisableRateLimiting();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponseAsync
+}).AllowAnonymous().DisableRateLimiting();
 
 app.Run();
+
+static Task WriteHealthResponseAsync(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+    return context.Response.WriteAsJsonAsync(new { status = report.Status.ToString() });
+}
+
+public partial class Program;

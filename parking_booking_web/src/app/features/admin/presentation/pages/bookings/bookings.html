@@ -77,8 +77,11 @@
             </td>
             <td class="text-right">
               <div class="action-buttons">
-                <button class="btn-icon" title="Chi tiết">
+                <button class="btn-icon" title="Chi tiết" (click)="openViewModal(booking)">
                   <i class="ph ph-eye"></i>
+                </button>
+                <button *ngIf="booking.status === 0" class="btn-icon text-orange" title="Đánh dấu Không đến" (click)="markNoShow(booking)">
+                  <i class="ph ph-user-minus"></i>
                 </button>
               </div>
             </td>
@@ -108,6 +111,61 @@
           <i class="ph ph-caret-right"></i>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Chi Tiết -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Chi tiết lượt đặt chỗ</h2>
+      <button class="btn-icon" (click)="closeModal()"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="modal-body" *ngIf="modalBooking">
+      <div class="detail-group">
+        <label>Mã Booking</label>
+        <p class="value font-mono">{{ modalBooking.bookingCode }}</p>
+      </div>
+      <div class="detail-group">
+        <label>Bãi đỗ / Vị trí</label>
+        <p class="value">{{ modalBooking.parkingLotName }} (Tầng {{ modalBooking.floorName }} - Chỗ {{ modalBooking.slotName }})</p>
+      </div>
+      <div class="detail-group">
+        <label>Biển số xe</label>
+        <p class="value">{{ modalBooking.licensePlate }}</p>
+      </div>
+      <div class="detail-row">
+        <div class="detail-group">
+          <label>Thời gian đặt</label>
+          <p class="value">{{ modalBooking.bookingTimestamp | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <div class="detail-group">
+          <label>Check-in</label>
+          <p class="value">{{ modalBooking.checkInTimestamp ? (modalBooking.checkInTimestamp | date:'dd/MM/yyyy HH:mm') : '--' }}</p>
+        </div>
+        <div class="detail-group">
+          <label>Check-out</label>
+          <p class="value">{{ modalBooking.checkOutTimestamp ? (modalBooking.checkOutTimestamp | date:'dd/MM/yyyy HH:mm') : '--' }}</p>
+        </div>
+      </div>
+      <div class="detail-group">
+        <label>Tổng tiền</label>
+        <p class="value text-primary font-bold">{{ modalBooking.totalPrice ? (modalBooking.totalPrice | currency:'VND':'symbol':'1.0-0') : '--' }}</p>
+      </div>
+      <div class="detail-group">
+        <label>Trạng thái</label>
+        <p class="value">
+          <span class="status-badge" [ngClass]="statusClass(modalBooking.status)">
+            {{ statusLabel(modalBooking.status) }}
+          </span>
+        </p>
+      </div>
+    </div>
+    <div class="modal-footer" *ngIf="modalBooking?.status === 0">
+      <button class="btn btn-outline text-orange" style="border-color: var(--color-orange);" (click)="markNoShow(modalBooking!)">
+        Đánh dấu Không đến (No-Show)
+      </button>
     </div>
   </div>
 </div>

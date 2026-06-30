@@ -45,3 +45,9 @@ public sealed record WalletTransactionResponse(Guid Id, decimal Amount, WalletTr
 public sealed record DepositRequest([Range(10000, 50000000)] decimal Amount);
 
 public sealed record DepositResponse(decimal Amount, string VietQrUrl);
+
+public sealed record CreateUserRequest(
+    [Required, StringLength(15, MinimumLength = 10)] string PhoneNumber,
+    [Required, StringLength(200, MinimumLength = 2)] string FullName,
+    [Required] Role Role,
+    [Required, StringLength(100, MinimumLength = 6)] string Password);

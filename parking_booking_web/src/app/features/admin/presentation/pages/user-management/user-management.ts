@@ -68,11 +68,22 @@ export class UserManagementComponent implements OnInit {
   nextPage(): void { if (this.pageIndex < this.totalPages) this.goToPage(this.pageIndex + 1); }
   prevPage(): void { if (this.pageIndex > 1) this.goToPage(this.pageIndex - 1); }
 
-  getPages(): number[] { 
-    const start = Math.max(1, this.pageIndex - 2); 
-    const end = Math.min(this.totalPages, start + 4); 
-    const adjustedStart = Math.max(1, end - 4); 
-    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i); 
+  getPages(): number[] {
+    const total = this.totalPages || 0;
+    if (total === 0) return [];
+    
+    if (total <= 10) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    
+    let start = Math.max(1, this.pageIndex - 2);
+    let end = Math.min(total, start + 4);
+    
+    if (end - start < 4) {
+      start = Math.max(1, end - 4);
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
   toggleLock(user: AdminUser): void {
@@ -111,5 +122,53 @@ export class UserManagementComponent implements OnInit {
       '3': 'role-admin'
     };
     return map[roleStr] || 'role-customer';
+  }
+
+  // Modal Create User logic
+  showModal = false;
+  modalSaving = false;
+  modalError: string | null = null;
+  newUser = {
+    phoneNumber: '',
+    fullName: '',
+    role: 0,
+    password: 'Password123!'
+  };
+
+  openCreateModal() {
+    this.newUser = {
+      phoneNumber: '',
+      fullName: '',
+      role: 0,
+      password: 'Password123!'
+    };
+    this.modalError = null;
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+  }
+
+  saveUser() {
+    if (!this.newUser.phoneNumber || !this.newUser.fullName || !this.newUser.password) {
+      this.modalError = 'Vui lòng nhập đầy đủ thông tin.';
+      return;
+    }
+    this.modalSaving = true;
+    this.modalError = null;
+
+    this.apiService.createUser(this.newUser).subscribe({
+      next: () => {
+        this.modalSaving = false;
+        this.closeModal();
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.modalSaving = false;
+        this.modalError = err.error?.message || 'Có lỗi xảy ra khi tạo người dùng.';
+        this.cdr.markForCheck();
+      }
+    });
   }
 }

@@ -179,7 +179,8 @@ public sealed class MockDataSeeder : IMockDataSeeder
             CreateParkingLot("parking-vincom-thu-duc", owners[0].Id, "Bãi xe Vincom Thủ Đức", "216 Võ Văn Ngân, Thủ Đức", 10.85210, 106.75840, 50, 45, 20_000, 1, 2.1m, true, true, 4.5f),
             CreateParkingLot("parking-gigamall", owners[1].Id, "Bãi xe Gigamall Phạm Văn Đồng", "240-242 Phạm Văn Đồng, Thủ Đức", 10.82860, 106.72140, 80, 60, 20_000, 1, 2.2m, true, true, 4.7f),
             CreateParkingLot("parking-coopmart-phu-lam", owners[2].Id, "Bãi xe Co.opmart Phú Lâm", "06 Bà Hom, Quận 6", 10.75230, 106.63180, 40, 25, 15_000, 1, null, true, false, 4.1f, new TimeSpan(7, 30, 0), new TimeSpan(22, 0, 0)),
-            CreateParkingLot("parking-mega-market", owners[3].Id, "Bãi xe Mega Market Bình Phú", "Bình Phú, Quận 6", 10.74230, 106.62680, 100, 80, 10_000, 1, null, false, false, 4.0f)
+            CreateParkingLot("parking-mega-market", owners[3].Id, "Bãi xe Mega Market Bình Phú", "Bình Phú, Quận 6", 10.74230, 106.62680, 100, 80, 10_000, 1, null, false, false, 4.0f),
+            CreateParkingLot("parking-pending-1", owners[4].Id, "Bãi xe đang chờ duyệt", "Khu công nghệ cao Thủ Đức", 10.85220, 106.79810, 50, 50, 15_000, 1, null, true, true, 0f, null, null, ParkingLotStatus.PendingApproval)
         ];
     }
 
@@ -199,7 +200,8 @@ public sealed class MockDataSeeder : IMockDataSeeder
         bool is24_7,
         float rating,
         TimeSpan? openTime = null,
-        TimeSpan? closeTime = null)
+        TimeSpan? closeTime = null,
+        ParkingLotStatus status = ParkingLotStatus.Active)
     {
         return new ParkingLot
         {
@@ -222,7 +224,7 @@ public sealed class MockDataSeeder : IMockDataSeeder
             OpenTime = openTime,
             CloseTime = closeTime,
             AverageRating = rating,
-            Status = ParkingLotStatus.Active
+            Status = status
         };
     }
 
@@ -346,17 +348,51 @@ public sealed class MockDataSeeder : IMockDataSeeder
 
     private static List<Notification> CreateNotifications(IReadOnlyCollection<User> users)
     {
-        return users
-            .Where(u => u.Role == Role.Driver)
-            .Select(u => new Notification
+        var now = DateTime.UtcNow;
+        var notifications = new List<Notification>();
+
+        foreach (var user in users)
+        {
+            var items = user.Role switch
             {
-                Id = DeterministicGuid($"notification-welcome-{u.Id}"),
-                UserId = u.Id,
-                Title = "Welcome to Parking Booking",
-                Message = "Your mock account is ready for local testing.",
-                IsRead = false
-            })
-            .ToList();
+                Role.Driver => new[]
+                {
+                    ("booking-confirmed", "Đặt chỗ thành công", "Chỗ đỗ A01 đã được giữ. Vui lòng check-in đúng hạn.", false, 5),
+                    ("checkin-reminder", "Sắp hết hạn check-in", "Bạn còn ít phút để check-in trước khi lượt đặt bị hủy.", false, 15),
+                    ("payment-success", "Thanh toán thành công", "Thanh toán cho lượt đỗ gần nhất đã được xác nhận.", true, 180),
+                    ("monthly-pass", "Vé tháng sắp hết hạn", "Vé tháng của bạn sẽ hết hạn trong 3 ngày.", true, 1440)
+                },
+                Role.Guard => new[]
+                {
+                    ("staff-assignment", "Phân công bãi xe", "Bạn đã được phân công trực tại một bãi đỗ.", false, 30)
+                },
+                Role.ParkingOwner => new[]
+                {
+                    ("owner-booking", "Có lượt đặt chỗ mới", "Bãi đỗ của bạn vừa nhận một lượt đặt chỗ mới.", false, 10),
+                    ("owner-payment", "Đối soát thanh toán", "Báo cáo doanh thu mẫu đã sẵn sàng để kiểm tra.", true, 720)
+                },
+                Role.Admin => new[]
+                {
+                    ("system", "Thông báo hệ thống", "Dữ liệu mẫu đã được khởi tạo thành công.", false, 1)
+                },
+                _ => Array.Empty<(string, string, string, bool, int)>()
+            };
+
+            foreach (var (key, title, message, isRead, minutesAgo) in items)
+            {
+                notifications.Add(new Notification
+                {
+                    Id = DeterministicGuid($"notification-{key}-{user.Id}"),
+                    UserId = user.Id,
+                    Title = title,
+                    Message = message,
+                    IsRead = isRead,
+                    CreatedAt = now.AddMinutes(-minutesAgo)
+                });
+            }
+        }
+
+        return notifications;
     }
 
     private static List<BankAccount> CreateBankAccounts(IReadOnlyCollection<User> users)

@@ -419,7 +419,7 @@ public sealed class ParkingLotService : IParkingLotService
             FirstBlockHours = request.FirstBlockHours,
             Is24_7 = request.Is24_7,
             ContactPhone = request.ContactPhone,
-            Status = ParkingLotStatus.Active,
+            Status = ParkingLotStatus.PendingApproval,
             TotalSlots = 0,
             AvailableSlots = 0,
             Description = string.Empty,
@@ -448,5 +448,15 @@ public sealed class ParkingLotService : IParkingLotService
         parkingLot.ContactPhone = request.ContactPhone.Trim();
         await _dbContext.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(parkingLot.Id, cancellationToken);
+    }
+
+    public async Task ApproveAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var parkingLot = await _dbContext.ParkingLots.FirstOrDefaultAsync(
+            lot => lot.Id == id,
+            cancellationToken) ?? throw new ApiException("Bãi đỗ xe không tồn tại.", StatusCodes.Status404NotFound);
+
+        parkingLot.Status = ParkingLotStatus.Active;
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

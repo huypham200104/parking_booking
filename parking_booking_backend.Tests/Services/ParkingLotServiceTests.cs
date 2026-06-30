@@ -108,7 +108,8 @@ public sealed class ParkingLotServiceTests
         await using var ownerContext = database.CreateContext();
         var ownerService = new ParkingLotService(ownerContext, new TestCurrentUserService(owner.Id));
         await ownerService.AddStaffAsync(lot.Id, new AddParkingLotStaffRequest(staff.Id), CancellationToken.None);
-        await ownerService.AddStaffAsync(lot.Id, new AddParkingLotStaffRequest(staff.Id), CancellationToken.None);
+        var duplicate = await Assert.ThrowsAsync<ApiException>(() =>
+            ownerService.AddStaffAsync(lot.Id, new AddParkingLotStaffRequest(staff.Id), CancellationToken.None));
 
         await using var unrelatedContext = database.CreateContext();
         var unrelatedService = new ParkingLotService(unrelatedContext, new TestCurrentUserService(unrelated.Id));
@@ -118,6 +119,7 @@ public sealed class ParkingLotServiceTests
             ownerService.AddStaffAsync(lot.Id, new AddParkingLotStaffRequest(Guid.NewGuid()), CancellationToken.None));
 
         Assert.Equal(1, await ownerContext.ParkingLotStaffs.CountAsync());
+        Assert.Equal(StatusCodes.Status409Conflict, duplicate.StatusCode);
         Assert.Equal(StatusCodes.Status403Forbidden, forbidden.StatusCode);
         Assert.Equal(StatusCodes.Status404NotFound, missingStaff.StatusCode);
     }

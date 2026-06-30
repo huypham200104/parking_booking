@@ -98,7 +98,7 @@ export class CreateBookingComponent implements OnDestroy {
     this.facade.create(slot.id, vehicle.id).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
       next: booking => {
         this.createdBooking.set(booking);
-        this.startHoldCountdown(booking.bookingTimestamp);
+        this.startHoldCountdown(booking.checkInDeadline);
         this.loadBookingQr(booking.id);
       },
       error: (error: ApiError) => {
@@ -115,9 +115,14 @@ export class CreateBookingComponent implements OnDestroy {
     return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   }
   closeLockedDialog(): void { this.lockedMessage.set(''); }
-  private startHoldCountdown(bookingTimestamp: string): void {
+  bookingDateTime(value: string): string {
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    }).format(new Date(value));
+  }
+  private startHoldCountdown(checkInDeadline: string): void {
     window.clearInterval(this.countdownTimer);
-    const expiresAt = new Date(bookingTimestamp).getTime() + 10 * 60 * 1000;
+    const expiresAt = new Date(checkInDeadline).getTime();
     const update = () => {
       const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
       this.remainingSeconds.set(seconds);

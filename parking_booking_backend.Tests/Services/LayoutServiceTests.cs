@@ -54,7 +54,7 @@ public sealed class LayoutServiceTests
         var slots = await service.SaveSlotsAsync(lot.Id, floor.Id,
         [
             new UpsertParkingSlotRequest(null, "A01", ParkingSlotStatus.Available, SlotVehicleType.Car, 10, 20, 60, 100, 0),
-            new UpsertParkingSlotRequest(null, "A02", ParkingSlotStatus.Occupied, SlotVehicleType.Car, 80, 20, 60, 100, 0)
+            new UpsertParkingSlotRequest(null, "A02", ParkingSlotStatus.Available, SlotVehicleType.Car, 80, 20, 60, 100, 0)
         ], CancellationToken.None);
         var fetchedSlots = await service.GetSlotsAsync(lot.Id, floor.Id, CancellationToken.None);
 
@@ -66,7 +66,7 @@ public sealed class LayoutServiceTests
         await using var assertContext = database.CreateContext();
         var lotReloaded = await assertContext.ParkingLots.SingleAsync(p => p.Id == lot.Id);
         Assert.Equal(2, lotReloaded.TotalSlots);
-        Assert.Equal(1, lotReloaded.AvailableSlots);
+        Assert.Equal(2, lotReloaded.AvailableSlots);
     }
 
     [Fact]

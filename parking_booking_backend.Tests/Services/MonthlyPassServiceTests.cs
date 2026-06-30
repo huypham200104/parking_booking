@@ -61,10 +61,10 @@ public sealed class MonthlyPassServiceTests
         await using var commandContext = database.CreateContext();
         var service = new MonthlyPassService(commandContext, new TestCurrentUserService(user.Id));
 
-        var result = await service.CreateAsync(new CreateMonthlyPassRequest(vehicle.Id, lot.Id, 30), CancellationToken.None);
+        var result = await service.CreateAsync(new CreateMonthlyPassRequest(vehicle.Id, lot.Id, 30, false), CancellationToken.None);
 
         Assert.Equal(900_000, result.Price);
-        Assert.Equal(MonthlyPassStatus.Active, result.Status);
+        Assert.Equal(MonthlyPassStatus.PendingPayment, result.Status);
     }
 
     [Fact]
@@ -88,9 +88,9 @@ public sealed class MonthlyPassServiceTests
         var service = new MonthlyPassService(commandContext, new TestCurrentUserService(user.Id));
 
         var vehicleException = await Assert.ThrowsAsync<ApiException>(() =>
-            service.CreateAsync(new CreateMonthlyPassRequest(otherVehicle.Id, lot.Id, 30), CancellationToken.None));
+            service.CreateAsync(new CreateMonthlyPassRequest(otherVehicle.Id, lot.Id, 30, false), CancellationToken.None));
         var lotException = await Assert.ThrowsAsync<ApiException>(() =>
-            service.CreateAsync(new CreateMonthlyPassRequest(Guid.NewGuid(), Guid.NewGuid(), 30), CancellationToken.None));
+            service.CreateAsync(new CreateMonthlyPassRequest(Guid.NewGuid(), Guid.NewGuid(), 30, false), CancellationToken.None));
 
         Assert.Equal(StatusCodes.Status404NotFound, vehicleException.StatusCode);
         Assert.Equal(StatusCodes.Status404NotFound, lotException.StatusCode);

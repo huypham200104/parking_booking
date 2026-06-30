@@ -91,6 +91,14 @@ public sealed class BookingsController : ControllerBase
         return Ok(ApiResponse<object>.Ok(new { cancelled = true }));
     }
 
+    [Authorize(Roles = "Admin, Guard")]
+    [HttpPost("{id:guid}/no-show")]
+    public async Task<ActionResult<ApiResponse<object>>> MarkNoShow(Guid id, CancellationToken cancellationToken)
+    {
+        await _bookingService.MarkNoShowAsync(id, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(new { noShow = true }));
+    }
+
     [HttpGet("{id:guid}/qr")]
     public async Task<ActionResult<ApiResponse<BookingQrResponse>>> GetQrCode(Guid id, CancellationToken cancellationToken)
     {

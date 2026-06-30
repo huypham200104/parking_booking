@@ -33,6 +33,8 @@ public interface IParkingLotService
     Task<ParkingLotDetailResponse> CreateAsync(CreateParkingLotRequest request, CancellationToken cancellationToken);
 
     Task<ParkingLotDetailResponse> UpdateAsync(Guid id, UpdateParkingLotRequest request, CancellationToken cancellationToken);
+
+    Task ApproveAsync(Guid id, CancellationToken cancellationToken);
 }
 
 public interface ILayoutService
@@ -70,6 +72,8 @@ public interface IBookingService
 
     Task CancelAsync(Guid id, CancellationToken cancellationToken);
 
+    Task MarkNoShowAsync(Guid id, CancellationToken cancellationToken);
+
     Task<BookingQrResponse> GenerateQrTokenAsync(Guid id, CancellationToken cancellationToken);
 
     Task<VerifyQrResponse> VerifyQrTokenAsync(VerifyQrRequest request, CancellationToken cancellationToken);
@@ -84,6 +88,8 @@ public interface IUserService
     Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, CancellationToken cancellationToken);
 
     Task ToggleLockAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<AdminUserResponse> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken);
 }
 
 public interface IVehicleService

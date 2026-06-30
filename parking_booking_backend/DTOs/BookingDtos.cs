@@ -17,6 +17,7 @@ public sealed record BookingResponse(
     Guid ParkingSlotId,
     string BookingCode,
     DateTime BookingTimestamp,
+    DateTime CheckInDeadline,
     DateTime? CheckInTimestamp,
     DateTime? CheckOutTimestamp,
     BookingStatus Status,

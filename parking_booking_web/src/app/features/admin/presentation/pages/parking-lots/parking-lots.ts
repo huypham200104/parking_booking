@@ -68,10 +68,21 @@ export class ParkingLots implements OnInit {
   prevPage(): void { if (this.pageIndex > 1) this.goToPage(this.pageIndex - 1); }
 
   getPages(): number[] {
-    const start = Math.max(1, this.pageIndex - 2);
-    const end = Math.min(this.totalPages, start + 4);
-    const adjustedStart = Math.max(1, end - 4);
-    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i);
+    const total = this.totalPages || 0;
+    if (total === 0) return [];
+    
+    if (total <= 10) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    
+    let start = Math.max(1, this.pageIndex - 2);
+    let end = Math.min(total, start + 4);
+    
+    if (end - start < 4) {
+      start = Math.max(1, end - 4);
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
   statusLabel(status: string | number): string {
@@ -86,35 +97,25 @@ export class ParkingLots implements OnInit {
 
   // Modal logic
   showModal = false;
-  modalMode: 'create' | 'edit' | 'view' = 'view';
+  modalMode: 'view' = 'view';
   modalForm: any = null;
-  modalSaving = false;
-  modalError: string | null = null;
 
-  openCreateModal() {
-    this.modalMode = 'create';
-    this.modalError = null;
-    this.modalForm = {
-      name: '', address: '', ownerId: '00000000-0000-0000-0000-000000000000', // We might need a real ownerId, or we can fetch a default owner or let admin select. For now, since admin creates it, maybe they are the owner? Wait, in ParkingLotService: owner.Role must be ParkingOwner. We need a way to select owner.
-      // We will just put an empty string and admin must paste an owner ID for now, or we can query users.
-      // To keep it simple, we'll add an Owner ID field.
-      latitude: 10.762622, longitude: 106.660172,
-      firstBlockPrice: 10000, firstBlockHours: 2,
-      is24_7: true, contactPhone: ''
-    };
-    this.showModal = true;
+  approveLot(lot: ParkingLotSummary) {
+    if (confirm(`Bạn có chắc muốn duyệt bãi đỗ xe "${lot.name}"?`)) {
+      this.apiService.approveParkingLot(lot.id).subscribe({
+        next: () => {
+          this.loadData();
+          // Optionally show a toast here
+        },
+        error: (err) => {
+          alert('Có lỗi xảy ra khi duyệt: ' + (err.error?.message || err.message));
+        }
+      });
+    }
   }
 
   openViewModal(lot: ParkingLotSummary) {
     this.modalMode = 'view';
-    this.modalError = null;
-    this.modalForm = { ...lot };
-    this.showModal = true;
-  }
-
-  openEditModal(lot: ParkingLotSummary) {
-    this.modalMode = 'edit';
-    this.modalError = null;
     this.modalForm = { ...lot };
     this.showModal = true;
   }
@@ -122,27 +123,5 @@ export class ParkingLots implements OnInit {
   closeModal() {
     this.showModal = false;
     this.modalForm = null;
-  }
-
-  saveModal() {
-    if (this.modalMode === 'create') {
-      this.modalSaving = true;
-      this.modalError = null;
-      this.apiService.createParkingLot(this.modalForm).subscribe({
-        next: () => {
-          this.modalSaving = false;
-          this.closeModal();
-          this.loadData();
-        },
-        error: (err) => {
-          this.modalSaving = false;
-          this.modalError = err.error?.message || 'Có lỗi xảy ra khi tạo bãi đỗ xe';
-          this.cdr.markForCheck();
-        }
-      });
-    } else {
-      // Edit is not implemented in backend yet, so just close or show error
-      this.modalError = 'Tính năng cập nhật chưa được hỗ trợ.';
-    }
   }
 }

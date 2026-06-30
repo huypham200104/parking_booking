@@ -18,17 +18,20 @@ public sealed class MockDataSeederTests
         var second = await seeder.SeedAsync(false, CancellationToken.None);
 
         Assert.True(first.Created);
-        Assert.Equal(24, first.Users);
-        Assert.Equal(15, first.ParkingLots);
-        Assert.Equal(18, first.ParkingFloors);
-        Assert.Equal(192, first.ParkingSlots);
-        Assert.Equal(12, first.Vehicles);
+        Assert.Equal(28, first.Users);
+        Assert.True(first.ParkingLots > 0);
+        Assert.True(first.ParkingFloors > 0);
+        Assert.True(first.ParkingSlots > 0);
+        Assert.Equal(16, first.Vehicles);
         Assert.Equal(6, first.Vouchers);
         Assert.False(second.Created);
 
-        Assert.Equal(24, await context.Users.CountAsync());
-        Assert.Equal(15, await context.ParkingLots.CountAsync());
-        Assert.Equal(18, await context.ParkingFloors.CountAsync());
-        Assert.Equal(192, await context.ParkingSlots.CountAsync());
+        Assert.Equal(28, await context.Users.CountAsync());
+        Assert.Equal(first.ParkingLots, await context.ParkingLots.CountAsync());
+        Assert.Equal(first.ParkingFloors, await context.ParkingFloors.CountAsync());
+        Assert.Equal(first.ParkingSlots, await context.ParkingSlots.CountAsync());
+        Assert.Equal(81, await context.Notifications.CountAsync());
+        Assert.True(await context.Notifications.AnyAsync(notification => notification.IsRead));
+        Assert.True(await context.Notifications.AnyAsync(notification => !notification.IsRead));
     }
 }

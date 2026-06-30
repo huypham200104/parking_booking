@@ -26,7 +26,7 @@ public sealed class ParkingLotsController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<ParkingLotSummaryResponse>>.Ok(parkingLots));
     }
 
-    [Authorize(Roles = "Admin,ParkingOwner")]
+    [Authorize(Roles = "ParkingOwner")]
     [HttpPost]
     public async Task<ActionResult<ApiResponse<ParkingLotDetailResponse>>> Create(CreateParkingLotRequest request, CancellationToken cancellationToken)
     {
@@ -40,6 +40,14 @@ public sealed class ParkingLotsController : ControllerBase
     {
         var result = await _parkingLotService.UpdateAsync(id, request, cancellationToken);
         return Ok(ApiResponse<ParkingLotDetailResponse>.Ok(result));
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id:guid}/approve")]
+    public async Task<ActionResult<ApiResponse<object>>> Approve(Guid id, CancellationToken cancellationToken)
+    {
+        await _parkingLotService.ApproveAsync(id, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(new { approved = true }));
     }
 
     [HttpGet("bounds")]
