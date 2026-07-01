@@ -135,8 +135,7 @@ android/key.properties
 **/google-services.json
 **/GoogleService-Info.plist
 
-# Private documentation
-docs/
+
 
 # Temporary files
 tmp/
