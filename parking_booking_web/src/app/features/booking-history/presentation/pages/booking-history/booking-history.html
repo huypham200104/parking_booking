@@ -67,7 +67,7 @@
             <div class="history-item__main">
               <div class="history-item__heading">
                 <div>
-                  <p>{{ booking.bookingTimestamp | date: 'dd/MM/yyyy, HH:mm' }}</p>
+                  <p>{{ booking.bookingTimestamp | date: 'dd/MM/yyyy, HH:mm':'Asia/Ho_Chi_Minh':'vi-VN' }}</p>
                   <h2>{{ booking.parkingLotName }}</h2>
                 </div>
                 <span class="history-status" [class]="statusClass(booking.status)">{{ statusLabel(booking.status) }}</span>
@@ -78,7 +78,7 @@
               <dl class="history-item__details">
                 <div><dt>Mã đặt chỗ</dt><dd>{{ booking.bookingCode }}</dd></div>
                 <div><dt>Biển số</dt><dd>{{ booking.licensePlate }}</dd></div>
-                <div><dt>Nhận xe</dt><dd>{{ booking.checkInTimestamp ? (booking.checkInTimestamp | date: 'HH:mm, dd/MM/yyyy') : 'Chưa nhận chỗ' }}</dd></div>
+                <div><dt>Nhận xe</dt><dd>{{ booking.checkInTimestamp ? (booking.checkInTimestamp | date: 'HH:mm, dd/MM/yyyy':'Asia/Ho_Chi_Minh':'vi-VN') : 'Chưa nhận chỗ' }}</dd></div>
                 <div class="history-item__price"><dt>Chi phí</dt><dd>{{ formatMoney(booking.totalPrice) }}</dd></div>
               </dl>
               @if (booking.status === 0) {

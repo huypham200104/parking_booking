@@ -41,12 +41,7 @@
       </div>
 
       <form class="login-form" #registerForm="ngForm" (ngSubmit)="submit(registerForm)" novalidate>
-        @if (!awaitingOtp()) {
-        <button class="quick-login" type="button" (click)="quickFill()">
-          <span>Điền nhanh tài khoản mẫu</span>
-          <strong>0901234567</strong>
-        </button>
-        }
+
 
         @if (helperMessage()) {
           <div class="login-form__hint" role="status">

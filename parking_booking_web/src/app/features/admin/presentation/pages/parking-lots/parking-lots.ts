@@ -1,9 +1,9 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { timeout } from 'rxjs';
+import { forkJoin, timeout } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
-import { PaginationResponse, ParkingLotSummary } from '../../../../../core/infrastructure/models/api.models';
+import { PaginationResponse, ParkingLotDetail, ParkingLotSummary, Review } from '../../../../../core/infrastructure/models/api.models';
 
 @Component({
   selector: 'app-parking-lots',
@@ -95,10 +95,17 @@ export class ParkingLots implements OnInit {
     return ['status-pending', 'status-active', 'status-suspended'][value] ?? 'status-unknown';
   }
 
+  isPending(status: string | number): boolean {
+    return status === 0 || status === 'PendingApproval';
+  }
+
   // Modal logic
   showModal = false;
   modalMode: 'view' = 'view';
   modalForm: any = null;
+  reviews: Review[] = [];
+  modalLoading = false;
+  modalError = '';
 
   approveLot(lot: ParkingLotSummary) {
     if (confirm(`Bạn có chắc muốn duyệt bãi đỗ xe "${lot.name}"?`)) {
@@ -117,11 +124,19 @@ export class ParkingLots implements OnInit {
   openViewModal(lot: ParkingLotSummary) {
     this.modalMode = 'view';
     this.modalForm = { ...lot };
+    this.reviews = [];
+    this.modalError = '';
+    this.modalLoading = true;
     this.showModal = true;
+    forkJoin({ detail: this.apiService.getParkingLot(lot.id), reviews: this.apiService.getParkingLotReviews(lot.id) }).subscribe({
+      next: ({ detail, reviews }: { detail: ParkingLotDetail; reviews: Review[] }) => { this.modalForm = detail; this.reviews = reviews; this.modalLoading = false; this.cdr.markForCheck(); },
+      error: error => { this.modalError = error.message; this.modalLoading = false; this.cdr.markForCheck(); }
+    });
   }
 
   closeModal() {
     this.showModal = false;
     this.modalForm = null;
+    this.reviews = [];
   }
 }

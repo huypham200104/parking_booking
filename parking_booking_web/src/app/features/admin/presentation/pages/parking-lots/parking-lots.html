@@ -68,7 +68,7 @@
                 <button class="btn-icon" title="Xem chi tiết" (click)="openViewModal(lot)">
                   <i class="ph ph-eye"></i>
                 </button>
-                <button *ngIf="lot.status === 'PendingApproval'" class="btn-icon text-green" title="Duyệt" (click)="approveLot(lot)">
+                <button *ngIf="isPending(lot.status)" class="btn-icon text-green" title="Duyệt bãi đỗ" (click)="approveLot(lot)">
                   <i class="ph ph-check-circle"></i>
                 </button>
               </div>
@@ -113,6 +113,8 @@
       <button class="btn-icon" (click)="closeModal()"><i class="ph ph-x"></i></button>
     </div>
     <div class="modal-body" *ngIf="modalForm">
+      <div class="page-skeleton" *ngIf="modalLoading" aria-label="Đang tải"></div>
+      <div class="modal-error" *ngIf="modalError">{{ modalError }}</div>
       <div class="form-group">
         <label>Tên bãi đỗ</label>
         <input type="text" [(ngModel)]="modalForm.name" [readonly]="modalMode === 'view'" class="form-control" />
@@ -151,6 +153,7 @@
           Mở cửa 24/7
         </label>
       </div>
+      <section class="review-section"><div class="review-heading"><h3>Đánh giá</h3><span>{{ reviews.length }} lượt</span></div><article class="review-item" *ngFor="let review of reviews"><div><strong>{{ review.userName }}</strong><span class="review-stars">★ {{ review.rating }}/5</span></div><p>{{ review.comment || 'Không có nội dung đánh giá.' }}</p><small>{{ review.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></article><p class="review-empty" *ngIf="!modalLoading && reviews.length === 0">Bãi đỗ chưa có đánh giá.</p></section>
     </div>
   </div>
 </div>

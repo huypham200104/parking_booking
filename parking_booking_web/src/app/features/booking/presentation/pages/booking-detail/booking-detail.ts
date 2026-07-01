@@ -40,7 +40,7 @@ export class BookingDetailComponent implements OnDestroy {
             const { toDataURL } = await import('qrcode');
             this.qrUrl.set(await toDataURL(qr.qrToken, { width: 320, margin: 2, errorCorrectionLevel: 'M' }));
           } catch { this.errorMessage.set('Không thể tạo hình QR.'); }
-          this.startCountdown(booking.bookingTimestamp);
+          this.startCountdown(booking.checkInDeadline);
         }
         this.isLoading.set(false);
       },
@@ -55,7 +55,10 @@ export class BookingDetailComponent implements OnDestroy {
     if (!code) return;
     this.isApplyingVoucher.set(true); this.voucherMessage.set('');
     this.api.applyVoucher(this.bookingId, code).subscribe({
-      next: () => { this.isApplyingVoucher.set(false); this.voucherMessage.set(`Đã áp dụng mã ${code}. Ưu đãi sẽ được tính khi checkout.`); },
+      next: () => { 
+        this.isApplyingVoucher.set(false); 
+        this.booking.update(b => b ? { ...b, appliedVoucherCode: code } : null);
+      },
       error: error => { this.isApplyingVoucher.set(false); this.voucherMessage.set(error.message ?? 'Không thể áp dụng voucher.'); },
     });
   }
@@ -67,8 +70,12 @@ export class BookingDetailComponent implements OnDestroy {
     });
   }
 
-  private startCountdown(timestamp: string): void {
-    const expiresAt = new Date(timestamp).getTime() + 10 * 60 * 1000;
+  formatVietnamDateTime(timestamp: string): string {
+    return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(timestamp));
+  }
+  private startCountdown(checkInDeadline: string): void {
+    const validDateStr = checkInDeadline.includes('Z') || checkInDeadline.includes('+') ? checkInDeadline : checkInDeadline + 'Z';
+    const expiresAt = new Date(validDateStr).getTime();
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
       this.remainingSeconds.set(remaining);

@@ -56,9 +56,9 @@ public interface IBookingService
 
     Task<IReadOnlyCollection<ParkingLotSummaryResponse>> GetRecentCompletedParkingLotsAsync(CancellationToken cancellationToken);
 
-    Task<IReadOnlyCollection<StaffBookingResponse>> GetForCurrentStaffAsync(CancellationToken cancellationToken);
+    Task<PaginationResponse<StaffBookingResponse>> GetForCurrentStaffAsync(int pageIndex, int pageSize, CancellationToken cancellationToken);
 
-    Task<IReadOnlyCollection<StaffBookingResponse>> GetForOwnerAsync(CancellationToken cancellationToken);
+    Task<PaginationResponse<StaffBookingResponse>> GetForOwnerAsync(int pageIndex, int pageSize, CancellationToken cancellationToken);
 
     Task<PaginationResponse<StaffBookingResponse>> GetAllAdminAsync(int pageIndex, int pageSize, CancellationToken cancellationToken);
 
@@ -77,6 +77,8 @@ public interface IBookingService
     Task<BookingQrResponse> GenerateQrTokenAsync(Guid id, CancellationToken cancellationToken);
 
     Task<VerifyQrResponse> VerifyQrTokenAsync(VerifyQrRequest request, CancellationToken cancellationToken);
+
+    Task<ProcessQrResponse> ProcessQrAsync(VerifyQrRequest request, CancellationToken cancellationToken);
 }
 
 public interface IUserService
@@ -85,7 +87,7 @@ public interface IUserService
 
     Task<UserResponse> UpdateMeAsync(UpdateCurrentUserRequest request, CancellationToken cancellationToken);
 
-    Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, CancellationToken cancellationToken);
+    Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, string? keyword, CancellationToken cancellationToken);
 
     Task ToggleLockAsync(Guid id, CancellationToken cancellationToken);
 
@@ -126,4 +128,8 @@ public interface IWalletService
     Task<WalletResponse> GetMineAsync(CancellationToken cancellationToken);
 
     Task<DepositResponse> CreateDepositAsync(DepositRequest request, CancellationToken cancellationToken);
+
+    Task<AdminWalletStatsResponse> GetAdminStatsAsync(CancellationToken cancellationToken);
+
+    Task<PaginationResponse<AdminUserWalletResponse>> GetAdminUserWalletsAsync(int pageIndex, int pageSize, string? keyword, CancellationToken cancellationToken);
 }

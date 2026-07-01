@@ -24,6 +24,7 @@ export class UserManagementComponent implements OnInit {
   totalCount = 0;
   totalPages = 0;
   filterPenalty = false;
+  keyword = '';
 
   ngOnInit(): void {
     this.loadUsers();
@@ -34,7 +35,7 @@ export class UserManagementComponent implements OnInit {
     this.error = null;
     this.cdr.markForCheck();
     
-    this.apiService.getAllUsers(this.pageIndex, this.pageSize, this.filterPenalty)
+    this.apiService.getAllUsers(this.pageIndex, this.pageSize, this.filterPenalty, this.keyword)
       .pipe(timeout(10000))
       .subscribe({
       next: (res: PaginationResponse<AdminUser>) => {
@@ -57,6 +58,8 @@ export class UserManagementComponent implements OnInit {
       }
     });
   }
+
+  search(): void { this.pageIndex = 1; this.loadUsers(); }
 
   goToPage(page: number): void { 
     if (page >= 1 && page <= this.totalPages && page !== this.pageIndex) { 
@@ -166,7 +169,7 @@ export class UserManagementComponent implements OnInit {
       },
       error: (err) => {
         this.modalSaving = false;
-        this.modalError = err.error?.message || 'Có lỗi xảy ra khi tạo người dùng.';
+        this.modalError = err.message || 'Có lỗi xảy ra khi tạo người dùng.';
         this.cdr.markForCheck();
       }
     });

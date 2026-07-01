@@ -4,7 +4,7 @@ import { catchError, map, Observable, throwError } from 'rxjs';
 import { ApiResponse, ProblemDetails } from '../models/api.models';
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number) { super(message); }
+  constructor(message: string, readonly status: number, readonly code?: string, readonly activeBookingId?: string) { super(message); }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,7 +27,7 @@ export class ApiClient {
         if (error instanceof ApiError) return throwError(() => error);
         const problem = error.error as ProblemDetails | undefined;
         const validation = problem?.errors ? Object.values(problem.errors).flat()[0] : undefined;
-        return throwError(() => new ApiError(validation ?? problem?.detail ?? problem?.title ?? 'Không thể kết nối máy chủ.', error.status));
+        return throwError(() => new ApiError(validation ?? problem?.detail ?? problem?.title ?? 'Không thể kết nối máy chủ.', error.status, problem?.code, problem?.activeBookingId));
       }),
     );
   }

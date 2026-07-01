@@ -26,10 +26,10 @@ export class OwnerDashboardComponent implements OnInit {
   get totalRevenue(): number { return this.bookings.reduce((sum, booking) => sum + (booking.totalPrice ?? 0), 0); }
 
   ngOnInit(): void {
-    forkJoin({ lots: this.api.getOwnerParkingLots(), bookings: this.api.getOwnerBookings() }).subscribe({
+    forkJoin({ lots: this.api.getOwnerParkingLots(), bookings: this.api.getOwnerBookings(1, 100) }).subscribe({
       next: ({ lots, bookings }) => {
         this.parkingLots = lots;
-        this.bookings = bookings;
+        this.bookings = bookings.items;
         this.isLoading = false;
         this.cdr.markForCheck();
       },

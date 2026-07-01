@@ -70,4 +70,39 @@ public sealed class WalletServiceTests
         Assert.Equal(StatusCodes.Status404NotFound, getException.StatusCode);
         Assert.Equal(StatusCodes.Status404NotFound, depositException.StatusCode);
     }
+
+    [Fact]
+    public async Task GetAdminStatsAsync_sums_deposits_and_ignores_payments()
+    {
+        await using var database = await TestDatabase.CreateInMemoryAsync();
+        var user = TestData.User();
+        var wallet = TestData.Wallet(user.Id);
+        var owner = TestData.User(role: Role.ParkingOwner);
+        var ownerWallet = TestData.Wallet(owner.Id, 500_000);
+        await using (var context = database.CreateContext())
+        {
+            context.Users.AddRange(user, owner);
+            context.Wallets.AddRange(wallet, ownerWallet);
+            context.WalletTransactions.AddRange(
+                new WalletTransaction { WalletId = wallet.Id, Amount = 150_000, Type = WalletTransactionType.Deposit, ReferenceId = "deposit" },
+                new WalletTransaction { WalletId = wallet.Id, Amount = -20_000, Type = WalletTransactionType.Payment, ReferenceId = "payment" },
+                new WalletTransaction { WalletId = ownerWallet.Id, Amount = 500_000, Type = WalletTransactionType.Deposit, ReferenceId = "owner-deposit" });
+            await context.SaveChangesAsync();
+        }
+
+        await using var queryContext = database.CreateContext();
+        var service = new WalletService(queryContext, new TestCurrentUserService(Guid.NewGuid()));
+        var result = await service.GetAdminStatsAsync(CancellationToken.None);
+
+        Assert.Equal(150_000, result.TotalDeposited);
+        Assert.Equal(150_000, result.DepositedToday);
+        Assert.Equal(1, result.DepositCount);
+        Assert.Equal(user.PhoneNumber, Assert.Single(result.RecentDeposits).PhoneNumber);
+
+        var userWallets = await service.GetAdminUserWalletsAsync(1, 10, user.PhoneNumber, CancellationToken.None);
+        var userWallet = Assert.Single(userWallets.Items);
+        Assert.Equal(150_000, userWallet.TotalDeposited);
+        Assert.Equal(wallet.Balance, userWallet.Balance);
+        Assert.DoesNotContain(userWallets.Items, item => item.UserId == owner.Id);
+    }
 }

@@ -28,18 +28,22 @@ public sealed class ApiInfrastructureTests : IClassFixture<ParkingBookingApiFact
             .Where(route => route is not null && (route.TrimStart('/').StartsWith("api/") || route.TrimStart('/').StartsWith("health/")))
             .ToList();
 
-        Assert.Equal(65, routes.Count);
+        Assert.Equal(70, routes.Count);
         Assert.Contains("api/bookings/recent-parking-lots", routes);
         Assert.Contains("api/bookings/admin/all", routes);
         Assert.Contains("api/bookings/{id:guid}/no-show", routes);
         Assert.Contains("api/parking-lots/{id:guid}/staff/by-phone", routes);
         Assert.Contains("api/users", routes);
+        Assert.Contains("api/wallets/admin/stats", routes);
+        Assert.Contains("api/wallets/admin/users", routes);
+        Assert.Contains("api/admin/dashboard", routes);
         Assert.Contains(routes, route => route!.TrimStart('/') == "health/live");
         Assert.Contains(routes, route => route!.TrimStart('/') == "health/ready");
     }
 
     [Theory]
     [InlineData("/api/bookings/me")]
+    [InlineData("/api/admin/dashboard")]
     [InlineData("/api/bookings/recent-parking-lots")]
     [InlineData("/api/bookings/staff")]
     [InlineData("/api/bookings/owner")]
@@ -84,6 +88,7 @@ public sealed class ApiInfrastructureTests : IClassFixture<ParkingBookingApiFact
         yield return [HttpMethod.Post, $"/api/bookings/{id}/cancel"];
         yield return [HttpMethod.Post, $"/api/bookings/{id}/no-show"];
         yield return [HttpMethod.Post, "/api/bookings/verify-qr"];
+        yield return [HttpMethod.Post, "/api/bookings/process-qr"];
         yield return [HttpMethod.Post, "/api/parking-lots"];
         yield return [HttpMethod.Put, $"/api/parking-lots/{id}"];
         yield return [HttpMethod.Put, $"/api/parking-lots/{id}/approve"];

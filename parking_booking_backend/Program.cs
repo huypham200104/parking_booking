@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using parking_booking_backend.Infrastructure;
 
 DotEnvLoader.LoadForDevelopment();
 
@@ -18,7 +19,8 @@ _ = JwtConfiguration.RequireSecureKey(builder.Configuration);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter()));
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddRateLimiter(options =>
@@ -47,9 +49,9 @@ builder.Services.AddRateLimiter(options =>
             ?? "unknown";
 
         var (policy, permitLimit, window) = path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
-            ? ("auth-login", 5, TimeSpan.FromMinutes(10))
+            ? ("auth-login", 5, TimeSpan.FromMinutes(5))
             : path.Equals("/api/auth/verify", StringComparison.OrdinalIgnoreCase)
-                ? ("auth-verify", 10, TimeSpan.FromMinutes(10))
+                ? ("auth-verify", 10, TimeSpan.FromMinutes(15))
                 : HttpMethods.IsPost(method) || HttpMethods.IsPut(method) || HttpMethods.IsDelete(method) || HttpMethods.IsPatch(method)
                     ? ("write", 30, TimeSpan.FromMinutes(1))
                     : ("default", 120, TimeSpan.FromMinutes(1));
@@ -108,7 +110,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseRateLimiter();
+// app.UseRateLimiter();
 app.UseAuthorization();
 
 // API 

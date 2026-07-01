@@ -141,7 +141,9 @@ public sealed class LayoutService : ILayoutService
             {
                 throw new ApiException($"Chỗ {slot.SlotName} đang có booking hoạt động nên không thể đổi trạng thái.", StatusCodes.Status409Conflict);
             }
-            else if (!activelyBookedSlotIds.Contains(slot.Id) && item.Status == ParkingSlotStatus.Occupied)
+            else if (!activelyBookedSlotIds.Contains(slot.Id)
+                && slot.Status != ParkingSlotStatus.Occupied
+                && item.Status == ParkingSlotStatus.Occupied)
             {
                 throw new ApiException("Trạng thái đang có xe chỉ được cập nhật bởi quy trình booking.", StatusCodes.Status400BadRequest);
             }

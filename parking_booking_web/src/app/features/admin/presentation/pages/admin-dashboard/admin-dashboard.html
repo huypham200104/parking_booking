@@ -4,28 +4,18 @@
       <h1 class="page-title">Tổng quan hệ thống</h1>
       <p class="page-subtitle">Hiệu suất và số liệu hoạt động ngày hôm nay.</p>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-secondary">
-        <i class="ph ph-calendar-blank"></i>
-        <span>Hôm nay</span>
-      </button>
-      <button class="btn btn-primary">
-        <i class="ph ph-export"></i>
-        <span>Xuất báo cáo</span>
-      </button>
-    </div>
+    <div class="header-actions"><span class="btn btn-secondary"><i class="ph ph-calendar-blank"></i> Dữ liệu hôm nay</span></div>
   </div>
 
   <div class="metrics-grid">
     <div class="metric-card">
       <div class="card-top">
-        <span class="card-label">Doanh thu ngày</span>
+        <span class="card-label">Tiền nạp ví hôm nay</span>
         <div class="icon-wrap text-emerald"><i class="ph ph-currency-circle-dollar"></i></div>
       </div>
-      <div class="card-value">12,450,000 đ</div>
-      <div class="card-trend positive">
-        <i class="ph ph-trend-up"></i>
-        <span>+14.5% so với hôm qua</span>
+      <div class="card-value">{{ walletStatsLoading ? '...' : ((walletStats?.depositedToday ?? 0) | number:'1.0-0') + ' đ' }}</div>
+      <div class="card-trend neutral">
+        <span>{{ walletStatsError || ((walletStats?.depositCount ?? 0) + ' lượt nạp đã ghi nhận') }}</span>
       </div>
     </div>
 
@@ -34,11 +24,8 @@
         <span class="card-label">Lượt đặt chỗ</span>
         <div class="icon-wrap text-blue"><i class="ph ph-ticket"></i></div>
       </div>
-      <div class="card-value">342</div>
-      <div class="card-trend positive">
-        <i class="ph ph-trend-up"></i>
-        <span>+5.2% so với hôm qua</span>
-      </div>
+      <div class="card-value">{{ isLoading ? '...' : dashboard?.bookingsToday ?? 0 }}</div>
+      <div class="card-trend neutral"><span>Phát sinh trong ngày</span></div>
     </div>
 
     <div class="metric-card">
@@ -46,9 +33,9 @@
         <span class="card-label">Bãi xe đang hoạt động</span>
         <div class="icon-wrap text-purple"><i class="ph ph-map-pin"></i></div>
       </div>
-      <div class="card-value">18 <span class="text-sm text-muted">/ 20</span></div>
+      <div class="card-value">{{ isLoading ? '...' : dashboard?.activeParkingLots ?? 0 }} <span class="text-sm text-muted">/ {{ dashboard?.totalParkingLots ?? 0 }}</span></div>
       <div class="card-trend neutral">
-        <span>Bình thường</span>
+        <span>{{ dashboard?.pendingParkingLots ?? 0 }} bãi chờ duyệt</span>
       </div>
     </div>
 
@@ -57,11 +44,22 @@
         <span class="card-label">Người dùng mới</span>
         <div class="icon-wrap text-orange"><i class="ph ph-users"></i></div>
       </div>
-      <div class="card-value">45</div>
-      <div class="card-trend positive">
-        <i class="ph ph-trend-up"></i>
-        <span>+12 người</span>
+      <div class="card-value">{{ isLoading ? '...' : dashboard?.newUsersToday ?? 0 }}</div>
+      <div class="card-trend neutral"><span>Đăng ký trong ngày</span></div>
+    </div>
+  </div>
+
+  <div class="bento-card wallet-summary">
+    <div class="card-header">
+      <h3 class="card-title">Doanh số nạp ví</h3>
+      <strong>{{ (walletStats?.totalDeposited ?? 0) | number:'1.0-0' }} đ</strong>
+    </div>
+    <div class="data-list">
+      <div class="list-row" *ngFor="let deposit of walletStats?.recentDeposits">
+        <div class="row-main"><div class="avatar-sm bg-blue">{{ deposit.fullName.charAt(0) }}</div><div class="row-info"><span class="name">{{ deposit.fullName }}</span><span class="meta">{{ deposit.phoneNumber }} · {{ deposit.createdAt | date:'dd/MM/yyyy HH:mm' }}</span></div></div>
+        <div class="row-amount">+{{ deposit.amount | number:'1.0-0' }} đ</div>
       </div>
+      <p class="empty-wallet" *ngIf="!walletStatsLoading && !walletStats?.recentDeposits?.length">Chưa có giao dịch nạp ví.</p>
     </div>
   </div>
 
@@ -72,62 +70,12 @@
         <a href="/admin/bookings" class="view-all">Xem tất cả</a>
       </div>
       <div class="data-list">
-        <!-- List item -->
-        <div class="list-row">
-          <div class="row-main">
-            <div class="avatar-sm">H</div>
-            <div class="row-info">
-              <span class="name">Hoàng Nguyễn</span>
-              <span class="meta">Lot A - Nguyễn Huệ • BKS: 51H-123.45</span>
-            </div>
-          </div>
-          <div class="row-status">
-            <span class="badge badge-success">Đã hoàn thành</span>
-          </div>
-          <div class="row-amount">50,000 đ</div>
+        <div class="list-row" *ngFor="let booking of dashboard?.recentBookings">
+          <div class="row-main"><div class="avatar-sm">{{ booking.userName.charAt(0) }}</div><div class="row-info"><span class="name">{{ booking.userName }}</span><span class="meta">{{ booking.parkingLotName }} • {{ booking.licensePlate }} • {{ booking.bookingCode }}</span></div></div>
+          <div class="row-status"><span class="badge" [class.badge-success]="booking.status===2" [class.badge-warning]="booking.status===0||booking.status===1" [class.badge-error]="booking.status===3||booking.status===4">{{statusLabel(booking.status)}}</span></div>
+          <div class="row-amount">{{ booking.totalPrice!==null ? (booking.totalPrice|number:'1.0-0')+' đ' : '--' }}</div>
         </div>
-        
-        <div class="list-row">
-          <div class="row-main">
-            <div class="avatar-sm bg-blue">T</div>
-            <div class="row-info">
-              <span class="name">Trần Việt</span>
-              <span class="meta">Lot C - Quận 7 • BKS: 29C-999.99</span>
-            </div>
-          </div>
-          <div class="row-status">
-            <span class="badge badge-warning">Đang đỗ xe</span>
-          </div>
-          <div class="row-amount">35,000 đ</div>
-        </div>
-
-        <div class="list-row">
-          <div class="row-main">
-            <div class="avatar-sm bg-orange">L</div>
-            <div class="row-info">
-              <span class="name">Lê Phương</span>
-              <span class="meta">Lot B - Landmark • BKS: 51F-456.78</span>
-            </div>
-          </div>
-          <div class="row-status">
-            <span class="badge badge-error">Đã hủy</span>
-          </div>
-          <div class="row-amount">--</div>
-        </div>
-        
-        <div class="list-row">
-          <div class="row-main">
-            <div class="avatar-sm bg-purple">P</div>
-            <div class="row-info">
-              <span class="name">Phạm Tùng</span>
-              <span class="meta">Lot A - Nguyễn Huệ • BKS: 60A-111.22</span>
-            </div>
-          </div>
-          <div class="row-status">
-            <span class="badge badge-success">Đã hoàn thành</span>
-          </div>
-          <div class="row-amount">120,000 đ</div>
-        </div>
+        <p class="empty-wallet" *ngIf="!isLoading&&!dashboard?.recentBookings?.length">Chưa có lượt đặt chỗ.</p>
       </div>
     </div>
 
@@ -136,75 +84,18 @@
         <h3 class="card-title">Hành động nhanh</h3>
       </div>
       <div class="quick-actions">
-        <button class="action-btn" (click)="openNotificationModal()">
+        <a class="action-btn" routerLink="/admin/notifications">
           <div class="icon-circle text-orange"><i class="ph ph-bell-ringing"></i></div>
           <span>Gửi thông báo</span>
-        </button>
-        <button class="action-btn">
-          <div class="icon-circle text-blue"><i class="ph ph-plus"></i></div>
-          <span>Thêm bãi đỗ mới</span>
-        </button>
-        <button class="action-btn">
-          <div class="icon-circle text-emerald"><i class="ph ph-user-plus"></i></div>
-          <span>Cấp quyền nhân viên</span>
-        </button>
-        <button class="action-btn">
+        </a>
+        <a class="action-btn" routerLink="/admin/parking-lots"><div class="icon-circle text-blue"><i class="ph ph-map-pin"></i></div><span>Quản lý bãi đỗ</span></a>
+        <a class="action-btn" routerLink="/admin/users"><div class="icon-circle text-emerald"><i class="ph ph-users"></i></div><span>Quản lý người dùng</span></a>
+        <a class="action-btn" routerLink="/admin/wallet-statistics"><div class="icon-circle text-emerald"><i class="ph ph-wallet"></i></div><span>Thống kê tiền nạp</span></a>
+        <a class="action-btn" routerLink="/admin/vouchers">
           <div class="icon-circle text-purple"><i class="ph ph-ticket"></i></div>
           <span>Quản lý mã giảm giá</span>
-        </button>
+        </a>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Send Notification Modal -->
-<div class="modal-backdrop" *ngIf="showNotificationModal">
-  <div class="modal-content" style="max-width: 500px; width: 100%;">
-    <div class="modal-header">
-      <h3 class="modal-title">Gửi thông báo cho người dùng</h3>
-      <button class="btn-icon" (click)="closeNotificationModal()"><i class="ph ph-x"></i></button>
-    </div>
-    <div class="modal-body">
-      <div *ngIf="notificationSuccess" class="alert alert-success mb-4">
-        Gửi thông báo thành công!
-      </div>
-      <div *ngIf="notificationError" class="alert alert-error mb-4">
-        {{ notificationError }}
-      </div>
-      
-      <form [formGroup]="notificationForm" (ngSubmit)="submitNotification()" class="form-layout" *ngIf="!notificationSuccess">
-        <div class="form-group">
-          <label class="form-label">Số điện thoại <span class="text-error">*</span></label>
-          <input type="text" class="form-control" formControlName="phoneNumber" placeholder="Nhập số điện thoại người nhận" />
-          <div class="form-hint text-error" *ngIf="notificationForm.get('phoneNumber')?.invalid && notificationForm.get('phoneNumber')?.touched">
-            Số điện thoại không hợp lệ (10-11 số).
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Tiêu đề <span class="text-error">*</span></label>
-          <input type="text" class="form-control" formControlName="title" placeholder="Nhập tiêu đề thông báo" />
-          <div class="form-hint text-error" *ngIf="notificationForm.get('title')?.invalid && notificationForm.get('title')?.touched">
-            Vui lòng nhập tiêu đề.
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Nội dung <span class="text-error">*</span></label>
-          <textarea class="form-control" formControlName="message" rows="4" placeholder="Nhập nội dung chi tiết"></textarea>
-          <div class="form-hint text-error" *ngIf="notificationForm.get('message')?.invalid && notificationForm.get('message')?.touched">
-            Vui lòng nhập nội dung thông báo.
-          </div>
-        </div>
-        
-        <div class="modal-actions mt-6" style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button type="button" class="btn btn-secondary" (click)="closeNotificationModal()" [disabled]="submittingNotification">Hủy</button>
-          <button type="submit" class="btn btn-primary" [disabled]="submittingNotification || notificationForm.invalid">
-            <i class="ph ph-spinner-gap spin" *ngIf="submittingNotification"></i>
-            <span>{{ submittingNotification ? 'Đang gửi...' : 'Gửi thông báo' }}</span>
-          </button>
-        </div>
-      </form>
     </div>
   </div>
 </div>

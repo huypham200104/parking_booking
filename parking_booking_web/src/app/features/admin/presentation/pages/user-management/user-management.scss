@@ -30,6 +30,8 @@
 }
 
 .header-actions {
+  display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
+  .user-search{display:flex;gap:.45rem}.user-search input{min-width:14rem;padding:.6rem .75rem;border:1px solid #d1d5db;border-radius:.5rem}
   .filter-toggle {
     display: flex;
     align-items: center;
@@ -327,3 +329,41 @@
     }
   }
 }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  width: min(34rem, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 1rem;
+  background: var(--color-bg-surface, #fff);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.24);
+}
+
+.modal-header, .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-header { border-bottom: 1px solid var(--color-border-base, #e5e7eb); }
+.modal-footer { justify-content: flex-end; border-top: 1px solid var(--color-border-base, #e5e7eb); }
+.modal-title { margin: 0; font-size: 1.2rem; }
+.modal-body { padding: 1.5rem; }
+.form-group { display: grid; gap: .45rem; margin-bottom: 1rem; }
+.form-control { width: 100%; padding: .7rem .8rem; border: 1px solid #d1d5db; border-radius: .5rem; }
+.error-banner { margin-bottom: 1rem; padding: .75rem; border-radius: .5rem; background: #fee2e2; color: #b91c1c; }
+.required { color: #dc2626; }
+.help-text { margin-top: -.2rem; font-size: .78rem; }

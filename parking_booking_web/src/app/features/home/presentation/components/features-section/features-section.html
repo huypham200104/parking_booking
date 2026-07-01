@@ -21,14 +21,14 @@
         <h3 class="features__cell-title">{{ features[0].title }}</h3>
         <p class="features__cell-desc">{{ features[0].description }}</p>
         <img
-          src="assets/images/features-phone.png"
+          src="assets/images/features-phone-app.png"
           alt="Màn hình điện thoại hiển thị bản đồ tìm kiếm bãi đỗ xe"
           class="features__cell-img"
           loading="lazy"
         />
       </div>
 
-      <!-- Cell 2: QR -->
+      <!-- Cell 2: QR – now with real photo -->
       <div class="features__cell features__cell--qr reveal reveal-delay-1">
         <div class="features__cell-icon features__icon--green">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -39,16 +39,14 @@
         </div>
         <h3 class="features__cell-title">{{ features[1].title }}</h3>
         <p class="features__cell-desc">{{ features[1].description }}</p>
-        <!-- QR visual -->
-        <div class="features__qr-visual" aria-hidden="true">
-          <div class="features__qr-grid">
-            @for (cell of [1,1,0,1,0,1,0,1,1,0,1,1,0,0,1,1,1,0,1,1,0,1,0,0,1]; track $index) {
-              <div class="features__qr-cell" [class.on]="cell === 1"></div>
-            }
-          </div>
-          <div class="features__qr-scan-line"></div>
-        </div>
+        <img
+          src="assets/images/qr-checkin.png"
+          alt="Người dùng quét mã QR tại cổng vào bãi đỗ xe"
+          class="features__cell-qr-img"
+          loading="lazy"
+        />
       </div>
+
 
       <!-- Cell 3: Real-time -->
       <div class="features__cell features__cell--realtime reveal reveal-delay-2">

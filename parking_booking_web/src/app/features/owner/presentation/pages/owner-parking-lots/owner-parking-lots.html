@@ -32,7 +32,7 @@
     @if (selectedFloor) {
       <div class="capacity-editor"><div><span>Số chỗ tại {{ selectedFloor.floorName }}</span><strong>{{ slots.length }} chỗ hiện có</strong></div><label><span>Số lượng mong muốn</span><input type="number" min="0" max="500" [(ngModel)]="slotCount"></label><button class="btn btn-primary" type="button" (click)="saveSlotCount()" [disabled]="isLayoutSaving">{{ isLayoutSaving ? 'Đang lưu...' : 'Lưu cấu hình tầng' }}</button></div>
       <div class="slot-legend"><span><i class="available"></i>Còn trống</span><span><i class="occupied"></i>Đang có xe</span><span><i class="maintenance"></i>Bảo trì</span></div>
-      <div class="slot-preview">@for (slot of slots; track slot.id) { <button type="button" [attr.data-status]="slot.status" [disabled]="slot.status === 1" (click)="toggleSlot(slot)"><strong>{{ slot.slotName }}</strong><small>{{ slotStatusLabel(slot) }}</small></button> } @empty { <p>Tầng này chưa có chỗ đỗ.</p> }</div>
+      <div class="slot-preview">@for (slot of slots; track slot.id) { <button type="button" [attr.data-status]="slot.status" [disabled]="slot.status == 1" (click)="toggleSlot(slot)"><strong>{{ slot.slotName }}</strong><small>{{ slotStatusLabel(slot) }}</small></button> } @empty { <p>Tầng này chưa có chỗ đỗ.</p> }</div>
       <p class="slot-help">Bấm vào chỗ trống hoặc bảo trì để chuyển trạng thái. Chỗ đang có xe chỉ được mở lại sau khi check-out.</p>
     } @else if (!isLayoutLoading) { <div class="empty-state"><p>Hãy thêm tầng đầu tiên cho bãi xe.</p></div> }
   </section></div>

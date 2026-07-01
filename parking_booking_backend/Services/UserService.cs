@@ -49,7 +49,7 @@ public sealed class UserService : IUserService
         return new UserResponse(user.Id, user.PhoneNumber, user.FullName, user.Role, user.TrustScore);
     }
 
-    public async Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<AdminUserResponse>> GetAllAsync(int pageIndex, int pageSize, bool? hasPenalty, string? keyword, CancellationToken cancellationToken)
     {
         pageIndex = Math.Max(1, pageIndex);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -58,6 +58,12 @@ public sealed class UserService : IUserService
         if (hasPenalty.HasValue && hasPenalty.Value)
         {
             query = query.Where(u => u.Bookings.Count(b => b.Status == BookingStatus.NoShow) > 0);
+        }
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var normalizedKeyword = keyword.Trim();
+            query = query.Where(user => user.FullName.Contains(normalizedKeyword) || user.PhoneNumber.Contains(normalizedKeyword));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -105,12 +111,8 @@ public sealed class UserService : IUserService
             IsLocked = false
         };
 
-        // Here we should hash the password, but since there's no auth/password logic shown, we'll assume it's stored somewhere or just mock it.
-        // Wait, is there a PasswordHash property? Let's check User.cs.
-        // Actually, earlier I saw User.cs doesn't have a PasswordHash. It must be using Firebase Auth or something, or it's mocked!
-        // I will just add the user to DB.
-
         _dbContext.Users.Add(user);
+        _dbContext.Wallets.Add(new Wallet { UserId = user.Id, Balance = 0 });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new AdminUserResponse(user.Id, user.PhoneNumber, user.FullName, user.Role, user.TrustScore, user.IsLocked, user.CreatedAt, 0);

@@ -422,6 +422,7 @@
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.review-section{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #e5e7eb;color:#111827}.review-heading,.review-item>div{display:flex;justify-content:space-between;align-items:center}.review-heading h3{margin:0;color:#111827}.review-heading span,.review-item small,.review-empty{color:#6b7280}.review-item{padding:1rem 0;border-bottom:1px solid #f3f4f6}.review-item strong{color:#111827}.review-item p{margin:.45rem 0;color:#374151}.review-stars{color:#b45309;font-weight:700}.review-empty{padding:1rem 0}
 
 /* Dark mode adjustments - add this later if system supports global dark mode */
 @media (prefers-color-scheme: dark) {

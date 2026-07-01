@@ -4,11 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '../../../../../core/infrastructure/http/api-client.service';
 import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
-import { Booking, ParkingLotSummary, StaffBooking, VerifyBookingQr } from '../../../../../core/infrastructure/models/api.models';
-
-interface DetectedBarcode { rawValue: string; }
-interface BarcodeDetectorInstance { detect(source: CanvasImageSource): Promise<DetectedBarcode[]>; }
-interface BarcodeDetectorConstructor { new(options: { formats: string[] }): BarcodeDetectorInstance; }
+import { BrowserQRCodeReader, IScannerControls } from '@zxing/browser';
+import { Booking, ParkingLotSummary, ProcessBookingQr, StaffBooking, VerifyBookingQr } from '../../../../../core/infrastructure/models/api.models';
 
 @Component({
   selector: 'app-staff-dashboard',
@@ -19,8 +16,9 @@ interface BarcodeDetectorConstructor { new(options: { formats: string[] }): Barc
 })
 export class StaffDashboardComponent implements OnInit, OnDestroy {
   private readonly api = inject(ParkingBookingApiService);
-  private cameraStream: MediaStream | null = null;
-  private scanFrameId: number | null = null;
+  private readonly qrReader = new BrowserQRCodeReader();
+  private scannerControls: IScannerControls | null = null;
+  private isProcessingQr = false;
   @ViewChild('cameraVideo') private cameraVideo?: ElementRef<HTMLVideoElement>;
 
   readonly parkingLots = signal<ParkingLotSummary[]>([]);
@@ -38,6 +36,11 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
   readonly checkoutResult = signal<{ totalPrice: number; vietQrUrl: string | null; status: string; checkOutTimestamp: string } | null>(null);
   readonly isCameraOpen = signal(false);
   readonly cameraMessage = signal('');
+  readonly checkoutConfirmation = signal<ProcessBookingQr | null>(null);
+  readonly bookingPage = signal(1);
+  readonly bookingPageSize = 10;
+  readonly bookingTotalPages = signal(0);
+  readonly bookingTotalCount = signal(0);
 
   ngOnInit(): void {
     this.api.getMyStaffParkingLots().pipe(finalize(() => this.isLoadingParkingLots.set(false))).subscribe({
@@ -49,9 +52,13 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
 
   loadBookings(): void {
     this.isLoadingBookings.set(true);
-    this.api.getStaffBookings().pipe(finalize(() => this.isLoadingBookings.set(false))).subscribe({
-      next: bookings => {
+    this.api.getStaffBookings(this.bookingPage(), this.bookingPageSize).pipe(finalize(() => this.isLoadingBookings.set(false))).subscribe({
+      next: response => {
+        const bookings = response.items;
         this.staffBookings.set(bookings);
+        this.bookingPage.set(response.pageIndex);
+        this.bookingTotalPages.set(response.totalPages);
+        this.bookingTotalCount.set(response.totalCount);
         const currentId = this.selectedBooking()?.id;
         this.selectedBooking.set(bookings.find(item => item.id === currentId) ?? bookings[0] ?? null);
       },
@@ -59,11 +66,18 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  goToBookingPage(page: number): void {
+    if (page < 1 || page > this.bookingTotalPages() || page === this.bookingPage()) return;
+    this.bookingPage.set(page);
+    this.loadBookings();
+  }
+
   selectBooking(booking: StaffBooking): void {
     this.selectedBooking.set(booking);
     this.verifiedBooking.set(null);
     this.booking.set(null);
     this.checkoutResult.set(null);
+    this.checkoutConfirmation.set(null);
     this.resetMessages();
   }
 
@@ -82,22 +96,20 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-    if (!Detector) {
-      this.cameraMessage.set('Trình duyệt này chưa hỗ trợ đọc QR trực tiếp. Hãy dùng Chrome/Edge hoặc dán nội dung QR.');
-      return;
-    }
-
     try {
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
       this.isCameraOpen.set(true);
       window.setTimeout(async () => {
         const video = this.cameraVideo?.nativeElement;
-        if (!video || !this.cameraStream) return;
-        video.srcObject = this.cameraStream;
-        await video.play();
-        this.cameraMessage.set('Đưa mã QR vào giữa khung hình.');
-        this.scanCamera(new Detector({ formats: ['qr_code'] }));
+        if (!video) return;
+        try {
+          this.cameraMessage.set('Đưa mã QR vào giữa khung hình.');
+          this.scannerControls = await this.qrReader.decodeFromVideoDevice(undefined, video, result => {
+            if (result && !this.isProcessingQr) this.handleDecodedToken(result.getText());
+          });
+        } catch {
+          this.stopScanner();
+          this.cameraMessage.set('Không mở được camera. Hãy cấp quyền camera hoặc tải ảnh QR.');
+        }
       });
     } catch {
       this.stopScanner();
@@ -106,10 +118,8 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
   }
 
   stopScanner(): void {
-    if (this.scanFrameId !== null) cancelAnimationFrame(this.scanFrameId);
-    this.scanFrameId = null;
-    this.cameraStream?.getTracks().forEach(track => track.stop());
-    this.cameraStream = null;
+    this.scannerControls?.stop();
+    this.scannerControls = null;
     this.isCameraOpen.set(false);
   }
 
@@ -123,19 +133,62 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
     this.resetMessages();
     this.booking.set(null);
     this.checkoutResult.set(null);
+    this.checkoutConfirmation.set(null);
+    this.processQrToken(token);
+  }
+
+  async uploadQrImage(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.resetMessages();
+    if (!file.type.startsWith('image/')) { this.errorMessage.set('Vui lòng chọn một file ảnh.'); return; }
+    if (file.size > 10 * 1024 * 1024) { this.errorMessage.set('Ảnh QR không được vượt quá 10 MB.'); return; }
+    const url = URL.createObjectURL(file);
+    try {
+      const result = await this.qrReader.decodeFromImageUrl(url);
+      this.handleDecodedToken(result.getText());
+    } catch {
+      this.errorMessage.set('Không tìm thấy mã QR hợp lệ trong ảnh đã chọn.');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  private processQrToken(token: string): void {
+    if (this.isProcessingQr) return;
+    this.isProcessingQr = true;
     this.isSubmitting.set(true);
-    this.api.verifyBookingQr(token).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+    this.checkoutConfirmation.set(null);
+    this.api.processBookingQr(token).pipe(finalize(() => { this.isSubmitting.set(false); this.isProcessingQr = false; })).subscribe({
       next: result => {
-        this.verifiedBooking.set(result);
+        this.verifiedBooking.set({ isValid: true, bookingId: result.bookingId, bookingCode: result.bookingCode, licensePlate: result.licensePlate, message: null });
         const matchedBooking = this.staffBookings().find(item => item.id === result.bookingId) ?? null;
         this.selectedBooking.set(matchedBooking);
-        this.successMessage.set('Mã hợp lệ. Hãy đối chiếu biển số trước khi cho xe vào bãi.');
+        if (result.action === 'CheckedIn') {
+          this.staffBookings.update(items => items.map(item => item.id === result.bookingId ? { ...item, status: 1, checkInTimestamp: result.checkInTimestamp } : item));
+          this.selectedBooking.update(item => item?.id === result.bookingId ? { ...item, status: 1, checkInTimestamp: result.checkInTimestamp } : item);
+          this.successMessage.set('QR hợp lệ. Xe đã được check-in tự động.');
+        } else {
+          this.checkoutConfirmation.set(result);
+          this.successMessage.set('QR hợp lệ. Vui lòng xác nhận đã thu tiền để checkout.');
+        }
       },
       error: (error: ApiError) => {
         this.verifiedBooking.set(null);
         this.errorMessage.set(error.message);
       },
     });
+  }
+
+  private handleDecodedToken(token: string): void {
+    const value = token.trim();
+    if (!value || this.isProcessingQr) return;
+    this.qrToken.set(value);
+    this.stopScanner();
+    this.cameraMessage.set('Đã đọc mã QR. Đang xử lý...');
+    this.processQrToken(value);
   }
 
   checkIn(): void {
@@ -148,7 +201,7 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
   }
 
   checkOut(): void {
-    const bookingId = this.selectedBooking()?.id ?? this.verifiedBooking()?.bookingId;
+    const bookingId = this.checkoutConfirmation()?.bookingId ?? this.selectedBooking()?.id ?? this.verifiedBooking()?.bookingId;
     if (!bookingId) return;
 
     this.resetMessages();
@@ -163,6 +216,8 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
           ? { ...item, status: 2, totalPrice: result.totalPrice, checkOutTimestamp: result.checkOutTimestamp }
           : item));
         this.successMessage.set('Check-out thành công. Thu đúng số tiền hiển thị từ khách hàng.');
+        this.checkoutConfirmation.set(null);
+        this.api.getMyStaffParkingLots().subscribe({ next: lots => this.parkingLots.set(lots) });
       },
       error: (error: ApiError) => this.errorMessage.set(error.message),
     });
@@ -174,31 +229,8 @@ export class StaffDashboardComponent implements OnInit, OnDestroy {
     this.verifiedBooking.set(null);
     this.booking.set(null);
     this.checkoutResult.set(null);
+    this.checkoutConfirmation.set(null);
     this.resetMessages();
-  }
-
-  private scanCamera(detector: BarcodeDetectorInstance): void {
-    const scan = async () => {
-      const video = this.cameraVideo?.nativeElement;
-      if (!video || !this.cameraStream) return;
-      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        try {
-          const codes = await detector.detect(video);
-          const value = codes[0]?.rawValue?.trim();
-          if (value) {
-            this.qrToken.set(value);
-            this.stopScanner();
-            this.cameraMessage.set('Đã đọc mã QR. Đang xác minh...');
-            this.verifyQr();
-            return;
-          }
-        } catch {
-          this.cameraMessage.set('Camera đang hoạt động nhưng chưa đọc được mã QR.');
-        }
-      }
-      this.scanFrameId = requestAnimationFrame(scan);
-    };
-    this.scanFrameId = requestAnimationFrame(scan);
   }
 
   private runBookingAction(action: () => ReturnType<ParkingBookingApiService['checkIn']>, message: string): void {

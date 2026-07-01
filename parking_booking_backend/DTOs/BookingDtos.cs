@@ -21,7 +21,8 @@ public sealed record BookingResponse(
     DateTime? CheckInTimestamp,
     DateTime? CheckOutTimestamp,
     BookingStatus Status,
-    decimal? TotalPrice);
+    decimal? TotalPrice,
+    string? AppliedVoucherCode);
 
 public sealed record BookingHistoryResponse(
     Guid Id,
@@ -30,10 +31,12 @@ public sealed record BookingHistoryResponse(
     string ParkingLotAddress,
     string LicensePlate,
     DateTime BookingTimestamp,
+    DateTime CheckInDeadline,
     DateTime? CheckInTimestamp,
     DateTime? CheckOutTimestamp,
     BookingStatus Status,
-    decimal? TotalPrice);
+    decimal? TotalPrice,
+    string? AppliedVoucherCode);
 
 public sealed record StaffBookingResponse(
     Guid Id,

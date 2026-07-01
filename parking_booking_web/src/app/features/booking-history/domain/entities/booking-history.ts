@@ -13,6 +13,7 @@ export interface BookingHistory {
   parkingLotAddress: string;
   licensePlate: string;
   bookingTimestamp: string;
+  checkInDeadline: string;
   checkInTimestamp: string | null;
   checkOutTimestamp: string | null;
   status: BookingStatus;

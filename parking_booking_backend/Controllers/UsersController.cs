@@ -33,9 +33,9 @@ public sealed class UsersController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ApiResponse<PaginationResponse<AdminUserResponse>>>> GetAll([FromQuery] int page = 1, [FromQuery] int size = 10, [FromQuery] bool? hasPenalty = null, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ApiResponse<PaginationResponse<AdminUserResponse>>>> GetAll([FromQuery] int page = 1, [FromQuery] int size = 10, [FromQuery] bool? hasPenalty = null, [FromQuery] string? keyword = null, CancellationToken cancellationToken = default)
     {
-        var users = await _userService.GetAllAsync(page, size, hasPenalty, cancellationToken);
+        var users = await _userService.GetAllAsync(page, size, hasPenalty, keyword, cancellationToken);
         return Ok(ApiResponse<PaginationResponse<AdminUserResponse>>.Ok(users));
     }
 

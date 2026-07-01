@@ -283,6 +283,7 @@
     transition: all 0.2s ease;
     text-align: left;
     width: 100%;
+    text-decoration: none;
 
     .icon-circle {
       width: 36px;
@@ -313,3 +314,38 @@
     }
   }
 }
+
+.wallet-summary .card-header > strong { color: #059669; font-size: 1.25rem; }
+.empty-wallet { padding: 1rem 0; color: var(--color-text-secondary); text-align: center; }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .58);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 1rem;
+  background: var(--color-bg-surface, #fff);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, .24);
+}
+
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--color-border-base); }
+.modal-title { margin: 0; }
+.modal-body { padding: 1.5rem; }
+.form-group { display: grid; gap: .45rem; margin-bottom: 1rem; }
+.form-control { width: 100%; padding: .7rem .8rem; border: 1px solid var(--color-border-base); border-radius: .5rem; background: var(--color-bg-surface); color: var(--color-text-primary); }
+.alert { margin-bottom: 1rem; padding: .8rem; border-radius: .5rem; }
+.alert-success { background: #d1fae5; color: #065f46; }
+.alert-error { background: #fee2e2; color: #991b1b; }
+.text-error { color: #dc2626; }
+.form-hint { font-size: .78rem; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

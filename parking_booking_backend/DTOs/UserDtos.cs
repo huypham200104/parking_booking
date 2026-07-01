@@ -46,6 +46,26 @@ public sealed record DepositRequest([Range(10000, 50000000)] decimal Amount);
 
 public sealed record DepositResponse(decimal Amount, string VietQrUrl);
 
+public sealed record AdminWalletDepositResponse(
+    Guid Id,
+    string PhoneNumber,
+    string FullName,
+    decimal Amount,
+    DateTime CreatedAt);
+
+public sealed record AdminWalletStatsResponse(
+    decimal TotalDeposited,
+    decimal DepositedToday,
+    int DepositCount,
+    IReadOnlyCollection<AdminWalletDepositResponse> RecentDeposits);
+
+public sealed record AdminUserWalletResponse(
+    Guid UserId,
+    string PhoneNumber,
+    string FullName,
+    decimal TotalDeposited,
+    decimal Balance);
+
 public sealed record CreateUserRequest(
     [Required, StringLength(15, MinimumLength = 10)] string PhoneNumber,
     [Required, StringLength(200, MinimumLength = 2)] string FullName,

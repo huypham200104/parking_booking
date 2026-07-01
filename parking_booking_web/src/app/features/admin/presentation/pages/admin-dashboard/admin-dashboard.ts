@@ -1,66 +1,49 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ParkingBookingApiService } from '../../../../../core/infrastructure/http/parking-booking-api.service';
+import { AdminDashboard, AdminWalletStats } from '../../../../../core/infrastructure/models/api.models';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.scss']
 })
-export class AdminDashboardComponent {
-  private readonly fb = inject(FormBuilder);
+export class AdminDashboardComponent implements OnInit {
   private readonly apiService = inject(ParkingBookingApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  showNotificationModal = false;
-  submittingNotification = false;
-  notificationError = '';
-  notificationSuccess = false;
+  walletStats: AdminWalletStats | null = null;
+  walletStatsLoading = true;
+  walletStatsError = '';
+  dashboard: AdminDashboard | null = null;
+  isLoading = true;
+  error = '';
 
-  notificationForm = this.fb.group({
-    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{10,11}$/)]],
-    title: ['', Validators.required],
-    message: ['', Validators.required]
-  });
-
-  openNotificationModal() {
-    this.showNotificationModal = true;
-    this.notificationSuccess = false;
-    this.notificationError = '';
-    this.notificationForm.reset();
-  }
-
-  closeNotificationModal() {
-    this.showNotificationModal = false;
-  }
-
-  submitNotification() {
-    if (this.notificationForm.invalid) {
-      this.notificationForm.markAllAsTouched();
-      return;
-    }
-
-    this.submittingNotification = true;
-    this.notificationError = '';
-    this.notificationSuccess = false;
-
-    const val = this.notificationForm.value;
-    this.apiService.sendNotificationToUser({
-      phoneNumber: val.phoneNumber!,
-      title: val.title!,
-      message: val.message!
-    }).subscribe({
-      next: () => {
-        this.submittingNotification = false;
-        this.notificationSuccess = true;
-        setTimeout(() => this.closeNotificationModal(), 2000);
+  ngOnInit(): void {
+    forkJoin({ dashboard: this.apiService.getAdminDashboard(), wallet: this.apiService.getAdminWalletStats() }).subscribe({
+      next: ({ dashboard, wallet }) => {
+        this.dashboard = dashboard;
+        const stats = wallet;
+        this.walletStats = stats;
+        this.walletStatsLoading = false;
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => {
-        this.submittingNotification = false;
-        this.notificationError = err?.error?.message || 'Có lỗi xảy ra khi gửi thông báo.';
+      error: error => {
+        this.error = error.message;
+        this.walletStatsError = error.message;
+        this.walletStatsLoading = false;
+        this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  statusLabel(status: number): string {
+    return ['Đang chờ', 'Đang đỗ', 'Hoàn thành', 'Đã hủy', 'Không đến'][status] ?? 'Không xác định';
   }
 }

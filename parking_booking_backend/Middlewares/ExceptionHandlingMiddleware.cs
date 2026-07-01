@@ -23,7 +23,7 @@ public sealed class ExceptionHandlingMiddleware
         }
         catch (ApiException exception)
         {
-            await WriteProblemAsync(context, exception.StatusCode, exception.Message);
+            await WriteProblemAsync(context, exception.StatusCode, exception.Message, exception.ErrorCode, exception.ActiveBookingId);
         }
         catch (Exception exception)
         {
@@ -32,7 +32,7 @@ public sealed class ExceptionHandlingMiddleware
         }
     }
 
-    private static async Task WriteProblemAsync(HttpContext context, int statusCode, string detail)
+    private static async Task WriteProblemAsync(HttpContext context, int statusCode, string detail, string? errorCode = null, Guid? activeBookingId = null)
     {
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
@@ -46,6 +46,8 @@ public sealed class ExceptionHandlingMiddleware
         };
 
         problem.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
+        if (!string.IsNullOrWhiteSpace(errorCode)) problem.Extensions["code"] = errorCode;
+        if (activeBookingId.HasValue) problem.Extensions["activeBookingId"] = activeBookingId.Value;
         await context.Response.WriteAsJsonAsync(problem);
     }
 }
@@ -62,4 +64,3 @@ internal static class ReasonPhrases
         _ => "Error"
     };
 }
-

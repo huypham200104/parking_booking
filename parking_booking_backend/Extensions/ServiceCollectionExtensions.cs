@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IFavouriteParkingLotService, FavouriteParkingLotService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+        services.AddSingleton(TimeProvider.System);
 
         services.AddHostedService<BookingAutoCancelService>();
 

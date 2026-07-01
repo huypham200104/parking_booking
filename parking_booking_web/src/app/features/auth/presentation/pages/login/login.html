@@ -56,22 +56,7 @@
       </div>
 
       <form class="login-form" #loginForm="ngForm" (ngSubmit)="submit(loginForm)" novalidate>
-        @if (!awaitingOtp()) {
-        <div class="quick-login-group" aria-label="Đăng nhập nhanh theo vai trò">
-          @for (account of demoAccounts; track account.role) {
-            <button
-              class="quick-login"
-              type="button"
-              (click)="quickFill(account)"
-              [class.quick-login--active]="selectedRole() === account.role"
-            >
-              <span>{{ account.label }}</span>
-              <strong>{{ account.phoneNumber }}</strong>
-              <small>{{ account.description }}</small>
-            </button>
-          }
-        </div>
-        }
+
 
         @if (helperMessage()) {
           <div class="login-form__hint" role="status">
@@ -114,7 +99,6 @@
             @if (otpInput.invalid && otpInput.touched) { <small>OTP phải có từ 4 đến 6 chữ số.</small> }
           </label>
           <div class="login-form__otp-actions">
-            <button type="button" class="btn btn-secondary btn-sm" (click)="quickFillOtp()">Nhập nhanh OTP</button>
             <button type="button" class="btn btn-secondary btn-sm" (click)="editPhoneNumber()">Đổi số điện thoại</button>
           </div>
         }

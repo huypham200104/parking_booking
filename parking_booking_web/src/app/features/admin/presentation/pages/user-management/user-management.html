@@ -5,6 +5,7 @@
       <p class="page-subtitle">Quản lý tài khoản và phân quyền người dùng trong hệ thống.</p>
     </div>
     <div class="header-actions">
+      <form class="user-search" (ngSubmit)="search()"><input type="search" name="keyword" [(ngModel)]="keyword" placeholder="Tên hoặc số điện thoại"><button class="btn btn-outline" type="submit"><i class="ph ph-magnifying-glass"></i> Lọc</button></form>
       <label class="filter-toggle" style="margin-right: 16px;">
         <input type="checkbox" [(ngModel)]="filterPenalty" (change)="pageIndex=1; loadUsers()" />
         <span>Chỉ hiện user có lượt phạt > 0</span>

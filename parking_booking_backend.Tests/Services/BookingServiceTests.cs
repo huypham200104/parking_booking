@@ -19,11 +19,14 @@ public sealed class BookingServiceTests
         var service = new BookingService(context, new TestCurrentUserService(fixture.Driver.Id));
 
         var result = await service.CreateAsync(new CreateBookingRequest(fixture.Slot.Id, fixture.Vehicle.Id, null), CancellationToken.None);
+        var historyItem = Assert.Single(await service.GetMineAsync(CancellationToken.None));
 
         Assert.Equal(BookingStatus.Pending, result.Status);
         Assert.Equal(fixture.Driver.Id, result.UserId);
         Assert.Equal(fixture.ParkingLot.Id, result.ParkingLotId);
         Assert.Equal(6, result.BookingCode.Length);
+        Assert.Equal(BookingPolicy.GetCheckInDeadline(result.BookingTimestamp), result.CheckInDeadline);
+        Assert.Equal(result.CheckInDeadline, historyItem.CheckInDeadline);
 
         var slot = await context.ParkingSlots.SingleAsync(s => s.Id == fixture.Slot.Id);
         var lot = await context.ParkingLots.SingleAsync(p => p.Id == fixture.ParkingLot.Id);
@@ -58,6 +61,40 @@ public sealed class BookingServiceTests
 
         Assert.Equal(StatusCodes.Status400BadRequest, missingVehicle.StatusCode);
         Assert.Equal(StatusCodes.Status409Conflict, unavailable.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(BookingStatus.Pending)]
+    [InlineData(BookingStatus.CheckedIn)]
+    public async Task CreateAsync_rejects_when_driver_has_active_booking(BookingStatus status)
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        var activeBooking = await AddBookingAsync(fixture, status);
+        await using var context = fixture.Database.CreateContext();
+        var service = new BookingService(context, new TestCurrentUserService(fixture.Driver.Id));
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() =>
+            service.CreateAsync(new CreateBookingRequest(fixture.Slot.Id, fixture.Vehicle.Id, null), CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+        Assert.Equal("ACTIVE_BOOKING_EXISTS", exception.ErrorCode);
+        Assert.Equal(activeBooking.Id, exception.ActiveBookingId);
+    }
+
+    [Theory]
+    [InlineData(BookingStatus.Completed)]
+    [InlineData(BookingStatus.Cancelled)]
+    [InlineData(BookingStatus.NoShow)]
+    public async Task CreateAsync_allows_new_booking_after_closed_booking(BookingStatus status)
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        await AddBookingAsync(fixture, status);
+        await using var context = fixture.Database.CreateContext();
+        var service = new BookingService(context, new TestCurrentUserService(fixture.Driver.Id));
+
+        var result = await service.CreateAsync(new CreateBookingRequest(fixture.Slot.Id, fixture.Vehicle.Id, null), CancellationToken.None);
+
+        Assert.Equal(BookingStatus.Pending, result.Status);
     }
 
     [Fact]
@@ -195,6 +232,124 @@ public sealed class BookingServiceTests
         Assert.Equal(BookingStatus.Cancelled, bookingReloaded.Status);
         Assert.Equal(ParkingSlotStatus.Available, slotReloaded.Status);
         Assert.Equal(StatusCodes.Status409Conflict, secondCancel.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProcessQrAsync_checks_in_pending_booking_for_assigned_staff()
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        var booking = await AddBookingAsync(fixture, BookingStatus.Pending);
+        var staff = TestData.User(role: Role.Guard);
+        await using (var seedContext = fixture.Database.CreateContext())
+        {
+            seedContext.Users.Add(staff);
+            seedContext.ParkingLotStaffs.Add(new ParkingLotStaff { UserId = staff.Id, ParkingLotId = fixture.ParkingLot.Id });
+            await seedContext.SaveChangesAsync();
+        }
+        string token;
+        await using (var driverContext = fixture.Database.CreateContext())
+        {
+            token = (await new BookingService(driverContext, new TestCurrentUserService(fixture.Driver.Id))
+                .GenerateQrTokenAsync(booking.Id, CancellationToken.None)).QrToken;
+        }
+        await using var staffContext = fixture.Database.CreateContext();
+        var result = await new BookingService(staffContext, new TestCurrentUserService(staff.Id))
+            .ProcessQrAsync(new VerifyQrRequest(token), CancellationToken.None);
+
+        Assert.Equal("CheckedIn", result.Action);
+        Assert.Equal(BookingStatus.CheckedIn, result.Status);
+        Assert.NotNull(result.CheckInTimestamp);
+    }
+
+    [Fact]
+    public async Task ProcessQrAsync_requires_checkout_confirmation_for_checked_in_booking()
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        var booking = await AddBookingAsync(fixture, BookingStatus.CheckedIn);
+        var staff = TestData.User(role: Role.Guard);
+        await using (var seedContext = fixture.Database.CreateContext())
+        {
+            seedContext.Users.Add(staff);
+            seedContext.ParkingLotStaffs.Add(new ParkingLotStaff { UserId = staff.Id, ParkingLotId = fixture.ParkingLot.Id });
+            await seedContext.SaveChangesAsync();
+        }
+        string token;
+        await using (var driverContext = fixture.Database.CreateContext())
+        {
+            token = (await new BookingService(driverContext, new TestCurrentUserService(fixture.Driver.Id))
+                .GenerateQrTokenAsync(booking.Id, CancellationToken.None)).QrToken;
+        }
+        await using var staffContext = fixture.Database.CreateContext();
+        var result = await new BookingService(staffContext, new TestCurrentUserService(staff.Id))
+            .ProcessQrAsync(new VerifyQrRequest(token), CancellationToken.None);
+
+        Assert.Equal("CheckoutConfirmationRequired", result.Action);
+        Assert.True(result.EstimatedTotal > 0);
+        Assert.Equal(BookingStatus.CheckedIn, (await staffContext.Bookings.FindAsync(booking.Id))!.Status);
+    }
+
+    [Fact]
+    public async Task GetForOwnerAsync_returns_requested_page_and_total_count()
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        await AddBookingAsync(fixture, BookingStatus.Completed, "OWNER1");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "OWNER2");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "OWNER3");
+        await using var context = fixture.Database.CreateContext();
+        var service = new BookingService(context, new TestCurrentUserService(fixture.Owner.Id));
+
+        var result = await service.GetForOwnerAsync(2, 2, CancellationToken.None);
+
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.PageIndex);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(2, result.TotalPages);
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
+    public async Task GetForCurrentStaffAsync_returns_requested_page_and_total_count()
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        var staff = TestData.User(role: Role.Guard);
+        await AddBookingAsync(fixture, BookingStatus.Completed, "STAFF1");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "STAFF2");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "STAFF3");
+        await using (var seedContext = fixture.Database.CreateContext())
+        {
+            seedContext.Users.Add(staff);
+            seedContext.ParkingLotStaffs.Add(new ParkingLotStaff { UserId = staff.Id, ParkingLotId = fixture.ParkingLot.Id });
+            await seedContext.SaveChangesAsync();
+        }
+        await using var context = fixture.Database.CreateContext();
+        var service = new BookingService(context, new TestCurrentUserService(staff.Id));
+
+        var result = await service.GetForCurrentStaffAsync(2, 2, CancellationToken.None);
+
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.PageIndex);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(2, result.TotalPages);
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
+    public async Task GetAllAdminAsync_returns_pagination_metadata_in_correct_fields()
+    {
+        var fixture = await CreateBookingFixtureAsync();
+        await AddBookingAsync(fixture, BookingStatus.Completed, "ADMIN1");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "ADMIN2");
+        await AddBookingAsync(fixture, BookingStatus.Completed, "ADMIN3");
+        await using var context = fixture.Database.CreateContext();
+        var service = new BookingService(context, new TestCurrentUserService(Guid.NewGuid()));
+
+        var result = await service.GetAllAdminAsync(2, 2, CancellationToken.None);
+
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.PageIndex);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(2, result.TotalPages);
+        Assert.Single(result.Items);
     }
 
     private static async Task<BookingFixture> CreateBookingFixtureAsync(ParkingSlotStatus slotStatus = ParkingSlotStatus.Available)

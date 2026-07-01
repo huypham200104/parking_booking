@@ -51,6 +51,8 @@ public sealed class MockDataSeeder : IMockDataSeeder
         var bankAccounts = CreateBankAccounts(users);
         var monthlyPasses = CreateMonthlyPasses(users, vehicles, parkingLots);
         var bookings = CreateBookings(users, vehicles, parkingLots, slots, vouchers);
+        var demoExtraBookings = CreateDemoUserRichData(users, vehicles, parkingLots, slots, vouchers);
+        bookings.AddRange(demoExtraBookings);
         var transactions = CreateTransactions(bookings);
         var reviews = CreateReviews(users, parkingLots, bookings);
         var reports = CreateCrowdsourceReports(users, parkingLots);
@@ -88,37 +90,32 @@ public sealed class MockDataSeeder : IMockDataSeeder
 
     private static List<User> CreateUsers()
     {
-        return
-        [
+        var users = new List<User>
+        {
             new User { Id = DeterministicGuid("user-admin"), PhoneNumber = SeedMarkerPhoneNumber, FullName = "System Admin", Role = Role.Admin },
             new User { Id = DeterministicGuid("user-owner-1"), PhoneNumber = "0911000001", FullName = "Nguyen Minh Quan", Role = Role.ParkingOwner },
             new User { Id = DeterministicGuid("user-owner-2"), PhoneNumber = "0911000002", FullName = "Tran Hoang Anh", Role = Role.ParkingOwner },
             new User { Id = DeterministicGuid("user-owner-3"), PhoneNumber = "0911000003", FullName = "Pham Gia Phuc", Role = Role.ParkingOwner },
             new User { Id = DeterministicGuid("user-owner-4"), PhoneNumber = "0911000004", FullName = "Le Minh Chau", Role = Role.ParkingOwner },
-            new User { Id = DeterministicGuid("user-owner-5"), PhoneNumber = "0911000005", FullName = "Vo Thanh Dat", Role = Role.ParkingOwner },
-            new User { Id = DeterministicGuid("user-guard-1"), PhoneNumber = "0922000001", FullName = "Le Van Bao Ve", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-guard-2"), PhoneNumber = "0922000002", FullName = "Pham Thi Bao Ve", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-guard-3"), PhoneNumber = "0922000003", FullName = "Hoang Van Kiem Soat", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-guard-4"), PhoneNumber = "0922000004", FullName = "Bui Thi Truc Cong", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-guard-5"), PhoneNumber = "0922000005", FullName = "Dang Quoc Bao Ve", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-guard-6"), PhoneNumber = "0922000006", FullName = "Mai Anh Tuan", Role = Role.Guard },
-            new User { Id = DeterministicGuid("user-driver-1"), PhoneNumber = "0933000001", FullName = "Do Gia Huy", Role = Role.Driver, TrustScore = 98 },
-            new User { Id = DeterministicGuid("user-driver-2"), PhoneNumber = "0933000002", FullName = "Nguyen Thu Linh", Role = Role.Driver, TrustScore = 92 },
-            new User { Id = DeterministicGuid("user-driver-3"), PhoneNumber = "0933000003", FullName = "Tran Quoc Bao", Role = Role.Driver, TrustScore = 85 },
-            new User { Id = DeterministicGuid("user-driver-4"), PhoneNumber = "0933000004", FullName = "Pham Ngoc Mai", Role = Role.Driver, TrustScore = 96 },
-            new User { Id = DeterministicGuid("user-driver-5"), PhoneNumber = "0933000005", FullName = "Le Huu Nghia", Role = Role.Driver, TrustScore = 91 },
-            new User { Id = DeterministicGuid("user-driver-6"), PhoneNumber = "0933000006", FullName = "Vo Thanh Lam", Role = Role.Driver, TrustScore = 88 },
-            new User { Id = DeterministicGuid("user-driver-7"), PhoneNumber = "0933000007", FullName = "Ho Thi My Duyen", Role = Role.Driver, TrustScore = 94 },
-            new User { Id = DeterministicGuid("user-driver-8"), PhoneNumber = "0933000008", FullName = "Dang Minh Khang", Role = Role.Driver, TrustScore = 90 },
-            new User { Id = DeterministicGuid("user-driver-9"), PhoneNumber = "0933000009", FullName = "Bui Quang Vinh", Role = Role.Driver, TrustScore = 87 },
-            new User { Id = DeterministicGuid("user-driver-10"), PhoneNumber = "0933000010", FullName = "Mai Phuong Thao", Role = Role.Driver, TrustScore = 99 },
-            new User { Id = DeterministicGuid("user-driver-11"), PhoneNumber = "0933000011", FullName = "Truong Anh Kiet", Role = Role.Driver, TrustScore = 93 },
-            new User { Id = DeterministicGuid("user-driver-12"), PhoneNumber = "0933000012", FullName = "Ly Bao Tram", Role = Role.Driver, TrustScore = 89 },
-            new User { Id = DeterministicGuid("user-driver-13"), PhoneNumber = "0933000013", FullName = "Nguyen Van A", Role = Role.Driver, TrustScore = 80 },
-            new User { Id = DeterministicGuid("user-driver-14"), PhoneNumber = "0933000014", FullName = "Tran Thi B", Role = Role.Driver, TrustScore = 75, IsLocked = true },
-            new User { Id = DeterministicGuid("user-driver-15"), PhoneNumber = "0933000015", FullName = "Le Van C", Role = Role.Driver, TrustScore = 60, IsLocked = true },
-            new User { Id = DeterministicGuid("user-driver-16"), PhoneNumber = "0933000016", FullName = "Phan Dinh D", Role = Role.Driver, TrustScore = 90 }
-        ];
+            new User { Id = DeterministicGuid("user-owner-5"), PhoneNumber = "0911000005", FullName = "Vo Thanh Dat", Role = Role.ParkingOwner }
+        };
+
+        for (int i = 1; i <= 60; i++)
+        {
+            users.Add(new User { Id = DeterministicGuid($"user-guard-{i}"), PhoneNumber = $"0922{i:D6}", FullName = $"Bảo vệ {i}", Role = Role.Guard });
+        }
+
+        for (int i = 1; i <= 30; i++)
+        {
+            users.Add(new User { Id = DeterministicGuid($"user-driver-{i}"), PhoneNumber = $"0933{i:D6}", FullName = $"Tài xế {i}", Role = Role.Driver, TrustScore = 100 });
+        }
+
+        for (int i = 31; i <= 35; i++)
+        {
+            users.Add(new User { Id = DeterministicGuid($"user-driver-{i}"), PhoneNumber = $"0933{i:D6}", FullName = $"Tài xế vi phạm {i}", Role = Role.Driver, TrustScore = 40, IsLocked = true });
+        }
+
+        return users;
     }
 
     private static List<Vehicle> CreateVehicles(IReadOnlyCollection<User> users)
@@ -312,16 +309,25 @@ public sealed class MockDataSeeder : IMockDataSeeder
             .OrderBy(u => u.PhoneNumber)
             .ToList();
 
-        return parkingLots
-            .OrderBy(parkingLot => parkingLot.Name)
-            .Take(guards.Count)
-            .Select((parkingLot, index) => new ParkingLotStaff
+        var assignments = new List<ParkingLotStaff>();
+        int guardIndex = 0;
+        foreach (var lot in parkingLots)
+        {
+            for (int i = 0; i < 3; i++)
             {
-                Id = DeterministicGuid($"staff-{guards[index % guards.Count].Id}-{parkingLot.Id}"),
-                UserId = guards[index % guards.Count].Id,
-                ParkingLotId = parkingLot.Id
-            })
-            .ToList();
+                if (guardIndex < guards.Count)
+                {
+                    assignments.Add(new ParkingLotStaff
+                    {
+                        Id = DeterministicGuid($"staff-{guards[guardIndex].Id}-{lot.Id}"),
+                        UserId = guards[guardIndex].Id,
+                        ParkingLotId = lot.Id
+                    });
+                    guardIndex++;
+                }
+            }
+        }
+        return assignments;
     }
 
     private static List<FavouriteParkingLot> CreateFavouriteParkingLots(IReadOnlyCollection<User> users, IReadOnlyCollection<ParkingLot> parkingLots)
@@ -454,14 +460,12 @@ public sealed class MockDataSeeder : IMockDataSeeder
         IReadOnlyCollection<Voucher> vouchers)
     {
         var drivers = users
-            .Where(u => u.Role == Role.Driver)
+            .Where(u => u.Role == Role.Driver && !u.IsLocked)
             .OrderBy(u => u.PhoneNumber)
-            .Take(9)
             .ToList();
 
         var lots = parkingLots
             .OrderBy(p => p.Name)
-            .Take(9)
             .ToList();
 
         var free10k = vouchers.Single(v => v.Code == "FREE10K");
@@ -571,6 +575,51 @@ public sealed class MockDataSeeder : IMockDataSeeder
                 });
             }
         }
+
+        // Generate dozens of active/pending bookings
+        for (int i = 0; i < 40; i++)
+        {
+            var driver = drivers[random.Next(drivers.Count)];
+            var vehicle = vehicles.First(v => v.UserId == driver.Id && v.IsDefault);
+            var lot = lots[random.Next(lots.Count)];
+            var isPending = random.Next(2) == 0;
+            var bookingTime = DateTime.UtcNow.AddMinutes(-random.Next(5, 120));
+
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"booking-active-{i}"),
+                UserId = driver.Id,
+                VehicleId = vehicle.Id,
+                ParkingLotId = lot.Id,
+                ParkingSlotId = availableSlots[random.Next(availableSlots.Count)].Id,
+                BookingCode = $"{(char)('B' + random.Next(26))}{(char)('B' + random.Next(26))}{random.Next(1000, 9999)}",
+                BookingTimestamp = bookingTime,
+                CheckInTimestamp = isPending ? null : bookingTime.AddMinutes(15),
+                Status = isPending ? BookingStatus.Pending : BookingStatus.CheckedIn
+            });
+        }
+
+        // Generate violations for locked users
+        var violators = users.Where(u => u.Role == Role.Driver && u.IsLocked).ToList();
+        foreach (var violator in violators)
+        {
+            var vehicle = vehicles.First(v => v.UserId == violator.Id && v.IsDefault);
+            for (int i = 0; i < 4; i++)
+            {
+                var lot = lots[random.Next(lots.Count)];
+                bookings.Add(new Booking
+                {
+                    Id = DeterministicGuid($"booking-violation-{violator.Id}-{i}"),
+                    UserId = violator.Id,
+                    VehicleId = vehicle.Id,
+                    ParkingLotId = lot.Id,
+                    ParkingSlotId = availableSlots[random.Next(availableSlots.Count)].Id,
+                    BookingCode = $"{(char)('V' + random.Next(26))}{(char)('V' + random.Next(26))}{random.Next(1000, 9999)}",
+                    BookingTimestamp = DateTime.UtcNow.AddDays(-random.Next(1, 10)),
+                    Status = random.Next(2) == 0 ? BookingStatus.NoShow : BookingStatus.Cancelled
+                });
+            }
+        }
         
         return bookings;
     }
@@ -634,6 +683,205 @@ public sealed class MockDataSeeder : IMockDataSeeder
                 IsProcessed = false
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Tạo dữ liệu phong phú, thực tế cho 4 tài khoản fast-login của màn hình demo:
+    /// - driver-1  (0933000001): nhiều booking đủ trạng thái, lịch sử dày dặn
+    /// - owner-1   (0911000001): bãi xe sở hữu có nhiều booking từ nhiều tài xế
+    /// - guard-1   (0922000001): bãi trực có nhiều lượt đang chờ xử lý (Pending/CheckedIn)
+    /// - admin     (0900000000): dữ liệu hệ thống nhìn vào thấy sôi động
+    /// </summary>
+    private static List<Booking> CreateDemoUserRichData(
+        IReadOnlyCollection<User> users,
+        IReadOnlyCollection<Vehicle> vehicles,
+        IReadOnlyCollection<ParkingLot> parkingLots,
+        IReadOnlyCollection<ParkingSlot> slots,
+        IReadOnlyCollection<Voucher> vouchers)
+    {
+        var bookings = new List<Booking>();
+        var rng = new Random(77);
+
+        var allDrivers = users.Where(u => u.Role == Role.Driver && !u.IsLocked).OrderBy(u => u.PhoneNumber).ToList();
+        var availableSlots = slots.Where(s => s.Status == ParkingSlotStatus.Available).ToList();
+        var lots = parkingLots.OrderBy(p => p.Name).ToList();
+
+        // ── Xác định các user demo ──────────────────────────────────────────
+        var driver1 = users.Single(u => u.PhoneNumber == "0933000001");
+        var owner1  = users.Single(u => u.PhoneNumber == "0911000001");
+        var guard1  = users.Single(u => u.PhoneNumber == "0922000001");
+
+        var driver1Vehicle = vehicles.First(v => v.UserId == driver1.Id && v.IsDefault);
+
+        // Bãi xe của owner-1 (theo seed hiện tại: Vincom Đồng Khởi, Saigon Centre, Tao Đàn, Vincom Thủ Đức)
+        var owner1Lots = parkingLots.Where(p => p.OwnerId == owner1.Id).ToList();
+
+        // Bãi được phân công cho guard-1: guard-1 là guard đầu tiên → phân công bãi đầu tiên alphabetically
+        var guard1Lot = lots.First();
+
+        var free10k  = vouchers.Single(v => v.Code == "FREE10K");
+        var welcome20 = vouchers.Single(v => v.Code == "WELCOME20");
+        var vip50    = vouchers.Single(v => v.Code == "VIP50");
+
+        string RandCode(string prefix = "") =>
+            $"{prefix}{(char)('A' + rng.Next(26))}{(char)('A' + rng.Next(26))}{rng.Next(1000, 9999)}";
+
+        ParkingSlot RandSlot() => availableSlots[rng.Next(availableSlots.Count)];
+        ParkingLot  RandLot()  => lots[rng.Next(lots.Count)];
+
+        // ════════════════════════════════════════════════════════════════════
+        // 1. DRIVER-1 – Lịch sử đặt chỗ phong phú
+        // ════════════════════════════════════════════════════════════════════
+
+
+
+        // 1c. 3 booking đã hoàn thành – đủ bãi khác nhau, đủ thời gian khác nhau
+        var driver1CompletedLots = lots.Take(10).ToList();
+        for (int i = 0; i < 3; i++)
+        {
+            var lot = driver1CompletedLots[i % driver1CompletedLots.Count];
+            var checkoutTime = DateTime.UtcNow.AddDays(-(i + 1)).AddHours(-rng.Next(1, 8));
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"demo-driver1-completed-{i}"),
+                UserId = driver1.Id, VehicleId = driver1Vehicle.Id,
+                ParkingLotId = lot.Id, ParkingSlotId = RandSlot().Id,
+                VoucherId = i % 4 == 0 ? welcome20.Id : i % 7 == 0 ? vip50.Id : null,
+                BookingCode = RandCode("D1"),
+                BookingTimestamp  = checkoutTime.AddHours(-4),
+                CheckInTimestamp  = checkoutTime.AddHours(-3),
+                CheckOutTimestamp = checkoutTime,
+                Status = BookingStatus.Completed,
+                TotalPrice = (decimal)(rng.Next(20, 120) * 1000)
+            });
+        }
+
+        // 1d. 1 booking bị Cancelled (để thấy lịch sử hủy)
+        for (int i = 0; i < 1; i++)
+        {
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"demo-driver1-cancelled-{i}"),
+                UserId = driver1.Id, VehicleId = driver1Vehicle.Id,
+                ParkingLotId = RandLot().Id, ParkingSlotId = RandSlot().Id,
+                BookingCode = RandCode("CX"),
+                BookingTimestamp = DateTime.UtcNow.AddDays(-(i + 2)).AddHours(-rng.Next(1, 6)),
+                Status = BookingStatus.Cancelled
+            });
+        }
+
+        // 1e. 1 booking NoShow
+        for (int i = 0; i < 1; i++)
+        {
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"demo-driver1-noshow-{i}"),
+                UserId = driver1.Id, VehicleId = driver1Vehicle.Id,
+                ParkingLotId = RandLot().Id, ParkingSlotId = RandSlot().Id,
+                BookingCode = RandCode("NS"),
+                BookingTimestamp = DateTime.UtcNow.AddDays(-(i + 5)).AddHours(-rng.Next(2, 10)),
+                Status = BookingStatus.NoShow
+            });
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // 2. CÁC BÃI CỦA OWNER-1 – Booking dày đặc từ nhiều tài xế
+        // ════════════════════════════════════════════════════════════════════
+        foreach (var ownerLot in owner1Lots)
+        {
+            // 1 booking Pending đang chờ check-in (guard cần xử lý)
+            for (int i = 0; i < 1; i++)
+            {
+                var drv = allDrivers[rng.Next(allDrivers.Count)];
+                var veh = vehicles.First(v => v.UserId == drv.Id && v.IsDefault);
+                bookings.Add(new Booking
+                {
+                    Id = DeterministicGuid($"demo-owner1-lot-{ownerLot.Id}-pending-{i}"),
+                    UserId = drv.Id, VehicleId = veh.Id,
+                    ParkingLotId = ownerLot.Id, ParkingSlotId = RandSlot().Id,
+                    BookingCode = RandCode("OW"),
+                    BookingTimestamp = DateTime.UtcNow.AddMinutes(-rng.Next(3, 45)),
+                    Status = BookingStatus.Pending
+                });
+            }
+
+            // 1 booking CheckedIn (xe đang trong bãi)
+            for (int i = 0; i < 1; i++)
+            {
+                var drv = allDrivers[rng.Next(allDrivers.Count)];
+                var veh = vehicles.First(v => v.UserId == drv.Id && v.IsDefault);
+                var bookingTime = DateTime.UtcNow.AddHours(-rng.Next(1, 4));
+                bookings.Add(new Booking
+                {
+                    Id = DeterministicGuid($"demo-owner1-lot-{ownerLot.Id}-checkedin-{i}"),
+                    UserId = drv.Id, VehicleId = veh.Id,
+                    ParkingLotId = ownerLot.Id, ParkingSlotId = RandSlot().Id,
+                    BookingCode = RandCode("CI"),
+                    BookingTimestamp = bookingTime,
+                    CheckInTimestamp  = bookingTime.AddMinutes(rng.Next(5, 30)),
+                    Status = BookingStatus.CheckedIn
+                });
+            }
+
+            // 2 booking Completed gần đây (revenue report)
+            for (int i = 0; i < 2; i++)
+            {
+                var drv = allDrivers[rng.Next(allDrivers.Count)];
+                var veh = vehicles.First(v => v.UserId == drv.Id && v.IsDefault);
+                var checkoutTime = DateTime.UtcNow.AddDays(-rng.Next(1, 14)).AddHours(-rng.Next(1, 8));
+                bookings.Add(new Booking
+                {
+                    Id = DeterministicGuid($"demo-owner1-lot-{ownerLot.Id}-completed-{i}"),
+                    UserId = drv.Id, VehicleId = veh.Id,
+                    ParkingLotId = ownerLot.Id, ParkingSlotId = RandSlot().Id,
+                    BookingCode = RandCode("OC"),
+                    BookingTimestamp  = checkoutTime.AddHours(-5),
+                    CheckInTimestamp  = checkoutTime.AddHours(-4),
+                    CheckOutTimestamp = checkoutTime,
+                    Status = BookingStatus.Completed,
+                    TotalPrice = (decimal)(rng.Next(15, 200) * 1000)
+                });
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // 3. BÃI CỦA GUARD-1 – Nhiều lượt đang chờ guard xử lý
+        // ════════════════════════════════════════════════════════════════════
+        // guard-1 trực bãi đầu tiên, tạo 2 booking Pending + 1 CheckedIn tại đó
+        for (int i = 0; i < 2; i++)
+        {
+            var drv = allDrivers[rng.Next(allDrivers.Count)];
+            var veh = vehicles.First(v => v.UserId == drv.Id && v.IsDefault);
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"demo-guard1-lot-pending-{i}"),
+                UserId = drv.Id, VehicleId = veh.Id,
+                ParkingLotId = guard1Lot.Id, ParkingSlotId = RandSlot().Id,
+                VoucherId = i % 5 == 0 ? free10k.Id : null,
+                BookingCode = RandCode("GP"),
+                BookingTimestamp = DateTime.UtcNow.AddMinutes(-rng.Next(2, 60)),
+                Status = BookingStatus.Pending
+            });
+        }
+
+        for (int i = 0; i < 1; i++)
+        {
+            var drv = allDrivers[rng.Next(allDrivers.Count)];
+            var veh = vehicles.First(v => v.UserId == drv.Id && v.IsDefault);
+            var btime = DateTime.UtcNow.AddHours(-rng.Next(1, 5));
+            bookings.Add(new Booking
+            {
+                Id = DeterministicGuid($"demo-guard1-lot-checkedin-{i}"),
+                UserId = drv.Id, VehicleId = veh.Id,
+                ParkingLotId = guard1Lot.Id, ParkingSlotId = RandSlot().Id,
+                BookingCode = RandCode("GC"),
+                BookingTimestamp = btime,
+                CheckInTimestamp  = btime.AddMinutes(rng.Next(5, 25)),
+                Status = BookingStatus.CheckedIn
+            });
+        }
+
+        return bookings;
     }
 
     private static Guid DeterministicGuid(string value)

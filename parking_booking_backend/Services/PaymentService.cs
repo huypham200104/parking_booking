@@ -17,9 +17,41 @@ public sealed class PaymentService : IPaymentService
 
     public async Task<bool> ProcessWebhookAsync(PaymentWebhookRequest request, CancellationToken cancellationToken)
     {
-        var bookingCode = request.Data.Description
+        var descriptionParts = request.Data.Description
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .LastOrDefault();
+            .ToArray();
+
+        if (descriptionParts.Length >= 2
+            && descriptionParts[0].Equals("WALLET", StringComparison.OrdinalIgnoreCase)
+            && Guid.TryParse(descriptionParts[1], out var userId))
+        {
+            var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(item => item.UserId == userId, cancellationToken);
+            if (wallet is null || request.Data.Amount <= 0)
+            {
+                return false;
+            }
+
+            var referenceId = string.IsNullOrWhiteSpace(request.Code)
+                ? $"wallet-{userId}-{request.Data.TransactionDateTime}"
+                : request.Code.Trim();
+            if (await _dbContext.WalletTransactions.AnyAsync(item => item.ReferenceId == referenceId, cancellationToken))
+            {
+                return true;
+            }
+
+            wallet.Balance += request.Data.Amount;
+            _dbContext.WalletTransactions.Add(new WalletTransaction
+            {
+                WalletId = wallet.Id,
+                Amount = request.Data.Amount,
+                Type = WalletTransactionType.Deposit,
+                ReferenceId = referenceId
+            });
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        var bookingCode = descriptionParts.LastOrDefault();
 
         if (string.IsNullOrWhiteSpace(bookingCode))
         {

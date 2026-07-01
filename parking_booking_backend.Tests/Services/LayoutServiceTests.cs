@@ -132,4 +132,44 @@ public sealed class LayoutServiceTests
         Assert.Equal(StatusCodes.Status404NotFound, missingFloor.StatusCode);
         Assert.Equal(StatusCodes.Status404NotFound, unknownSlot.StatusCode);
     }
+
+    [Fact]
+    public async Task SaveSlotsAsync_preserves_existing_occupied_status_but_rejects_manual_transition()
+    {
+        await using var database = await TestDatabase.CreateInMemoryAsync();
+        var owner = TestData.User(role: Role.ParkingOwner);
+        var lot = TestData.ParkingLot(owner.Id, availableSlots: 1);
+        var floor = TestData.Floor(lot.Id);
+        var occupiedSlot = TestData.Slot(floor.Id, ParkingSlotStatus.Occupied);
+        var availableSlot = TestData.Slot(floor.Id);
+        availableSlot.SlotName = "A02";
+        await using (var context = database.CreateContext())
+        {
+            context.Users.Add(owner);
+            context.ParkingLots.Add(lot);
+            context.ParkingFloors.Add(floor);
+            context.ParkingSlots.AddRange(occupiedSlot, availableSlot);
+            await context.SaveChangesAsync();
+        }
+
+        await using var commandContext = database.CreateContext();
+        var service = new LayoutService(commandContext, new TestCurrentUserService(owner.Id));
+
+        var result = await service.SaveSlotsAsync(lot.Id, floor.Id,
+        [
+            new UpsertParkingSlotRequest(occupiedSlot.Id, occupiedSlot.SlotName, ParkingSlotStatus.Occupied, SlotVehicleType.Car, 10, 20, 60, 100, 0),
+            new UpsertParkingSlotRequest(availableSlot.Id, availableSlot.SlotName, ParkingSlotStatus.Maintenance, SlotVehicleType.Car, 80, 20, 60, 100, 0)
+        ], CancellationToken.None);
+
+        Assert.Contains(result, slot => slot.Id == occupiedSlot.Id && slot.Status == ParkingSlotStatus.Occupied);
+        Assert.Contains(result, slot => slot.Id == availableSlot.Id && slot.Status == ParkingSlotStatus.Maintenance);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() => service.SaveSlotsAsync(lot.Id, floor.Id,
+        [
+            new UpsertParkingSlotRequest(occupiedSlot.Id, occupiedSlot.SlotName, ParkingSlotStatus.Occupied, SlotVehicleType.Car, 10, 20, 60, 100, 0),
+            new UpsertParkingSlotRequest(availableSlot.Id, availableSlot.SlotName, ParkingSlotStatus.Occupied, SlotVehicleType.Car, 80, 20, 60, 100, 0)
+        ], CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+    }
 }

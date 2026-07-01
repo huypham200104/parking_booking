@@ -56,10 +56,12 @@ public sealed class BookingService : IBookingService
                 booking.ParkingLot.Address,
                 booking.Vehicle != null ? booking.Vehicle.LicensePlate : booking.GuestLicensePlate ?? "N/A",
                 booking.BookingTimestamp,
+                booking.BookingTimestamp.AddMinutes(10),
                 booking.CheckInTimestamp,
                 booking.CheckOutTimestamp,
                 booking.Status,
-                booking.TotalPrice))
+                booking.TotalPrice,
+                booking.Voucher != null ? booking.Voucher.Code : null))
             .ToListAsync(cancellationToken);
     }
 
@@ -90,16 +92,23 @@ public sealed class BookingService : IBookingService
         return parkingLots.OrderBy(lot => ids.IndexOf(lot.Id)).ToList();
     }
 
-    public async Task<IReadOnlyCollection<StaffBookingResponse>> GetForCurrentStaffAsync(CancellationToken cancellationToken)
+    public async Task<PaginationResponse<StaffBookingResponse>> GetForCurrentStaffAsync(int pageIndex, int pageSize, CancellationToken cancellationToken)
     {
         var userId = _currentUser.UserId;
+        pageIndex = Math.Max(1, pageIndex);
+        pageSize = Math.Clamp(pageSize, 1, 100);
 
-        return await _dbContext.Bookings
+        var query = _dbContext.Bookings
             .AsNoTracking()
             .Where(booking => _dbContext.ParkingLotStaffs.Any(staff =>
-                staff.UserId == userId && staff.ParkingLotId == booking.ParkingLotId))
+                staff.UserId == userId && staff.ParkingLotId == booking.ParkingLotId));
+        var totalCount = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var items = await query
             .OrderBy(booking => booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn ? 0 : 1)
             .ThenByDescending(booking => booking.BookingTimestamp)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(booking => new StaffBookingResponse(
                 booking.Id,
                 booking.BookingCode,
@@ -113,17 +122,26 @@ public sealed class BookingService : IBookingService
                 booking.Status,
                 booking.TotalPrice))
             .ToListAsync(cancellationToken);
+
+        return new PaginationResponse<StaffBookingResponse>(items, totalCount, pageIndex, pageSize, totalPages);
     }
 
-    public async Task<IReadOnlyCollection<StaffBookingResponse>> GetForOwnerAsync(CancellationToken cancellationToken)
+    public async Task<PaginationResponse<StaffBookingResponse>> GetForOwnerAsync(int pageIndex, int pageSize, CancellationToken cancellationToken)
     {
         var userId = _currentUser.UserId;
+        pageIndex = Math.Max(1, pageIndex);
+        pageSize = Math.Clamp(pageSize, 1, 100);
 
-        return await _dbContext.Bookings
+        var query = _dbContext.Bookings
             .AsNoTracking()
-            .Where(booking => booking.ParkingLot != null && booking.ParkingLot.OwnerId == userId)
+            .Where(booking => booking.ParkingLot != null && booking.ParkingLot.OwnerId == userId);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var items = await query
             .OrderBy(booking => booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn ? 0 : 1)
             .ThenByDescending(booking => booking.BookingTimestamp)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(booking => new StaffBookingResponse(
                 booking.Id,
                 booking.BookingCode,
@@ -137,6 +155,8 @@ public sealed class BookingService : IBookingService
                 booking.Status,
                 booking.TotalPrice))
             .ToListAsync(cancellationToken);
+
+        return new PaginationResponse<StaffBookingResponse>(items, totalCount, pageIndex, pageSize, totalPages);
     }
 
     public async Task<PaginationResponse<StaffBookingResponse>> GetAllAdminAsync(int pageIndex, int pageSize, CancellationToken cancellationToken)
@@ -164,7 +184,7 @@ public sealed class BookingService : IBookingService
                 booking.TotalPrice))
             .ToListAsync(cancellationToken);
 
-        return new PaginationResponse<StaffBookingResponse>(items, pageIndex, pageSize, totalCount, totalPages);
+        return new PaginationResponse<StaffBookingResponse>(items, totalCount, pageIndex, pageSize, totalPages);
     }
 
     public async Task<BookingResponse> CreateAsync(CreateBookingRequest request, CancellationToken cancellationToken)
@@ -185,15 +205,28 @@ public sealed class BookingService : IBookingService
             return await CreateUnderSlotLockAsync(request, cancellationToken);
         }
 
-        var resource = $"booking:slot:{request.ParkingSlotId}";
-        await using var redLock = await _lockFactory.CreateLockAsync(
-            resource,
+        var userResource = $"booking:user:{_currentUser.UserId}";
+        await using var userLock = await _lockFactory.CreateLockAsync(
+            userResource,
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(2),
             TimeSpan.FromMilliseconds(200),
             cancellationToken);
 
-        if (!redLock.IsAcquired)
+        if (!userLock.IsAcquired)
+        {
+            throw new ApiException("Tài khoản đang thực hiện một yêu cầu đặt chỗ khác. Vui lòng thử lại.", StatusCodes.Status409Conflict);
+        }
+
+        var slotResource = $"booking:slot:{request.ParkingSlotId}";
+        await using var slotLock = await _lockFactory.CreateLockAsync(
+            slotResource,
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromMilliseconds(200),
+            cancellationToken);
+
+        if (!slotLock.IsAcquired)
         {
             throw new ApiException("Chỗ đỗ này đang được người khác thao tác. Vui lòng thử lại sau giây lát.", StatusCodes.Status409Conflict);
         }
@@ -205,6 +238,22 @@ public sealed class BookingService : IBookingService
     {
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
+        var activeBooking = await _dbContext.Bookings
+            .AsNoTracking()
+            .Where(booking => booking.UserId == _currentUser.UserId
+                && (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.CheckedIn))
+            .OrderByDescending(booking => booking.BookingTimestamp)
+            .Select(booking => new { booking.Id })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (activeBooking is not null)
+        {
+            throw new ApiException(
+                "Bạn đang có một lượt đặt chỗ chưa hoàn tất. Vui lòng hủy hoặc checkout lượt hiện tại trước khi đặt mới.",
+                StatusCodes.Status409Conflict,
+                "ACTIVE_BOOKING_EXISTS",
+                activeBooking.Id);
+        }
 
         var slot = await _dbContext.ParkingSlots
             .Include(s => s.ParkingFloor)
@@ -267,7 +316,7 @@ public sealed class BookingService : IBookingService
         if (booking.UserId.HasValue)
         {
             AddNotification(booking.UserId.Value, "Đặt chỗ thành công",
-                $"Mã {booking.BookingCode} đã được giữ. Vui lòng check-in trước {BookingPolicy.GetCheckInDeadline(booking.BookingTimestamp):HH:mm}.");
+                $"Mã {booking.BookingCode} đã được giữ. Vui lòng check-in trước {BookingPolicy.FormatVietnamTime(BookingPolicy.GetCheckInDeadline(booking.BookingTimestamp))}.");
         }
 
         AddNotification(parkingLot.OwnerId, "Có lượt đặt chỗ mới",
@@ -325,6 +374,7 @@ public sealed class BookingService : IBookingService
         }
 
         booking.VoucherId = voucher.Id;
+        booking.Voucher = voucher;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return ToResponse(booking);
@@ -556,9 +606,93 @@ public sealed class BookingService : IBookingService
         }
     }
 
+    public async Task<ProcessQrResponse> ProcessQrAsync(VerifyQrRequest request, CancellationToken cancellationToken)
+    {
+        var bookingId = ValidateBookingQrToken(request.QrToken);
+        var booking = await _dbContext.Bookings
+            .Include(item => item.Vehicle)
+            .Include(item => item.ParkingLot)
+            .Include(item => item.Voucher)
+            .FirstOrDefaultAsync(item => item.Id == bookingId, cancellationToken)
+            ?? throw new ApiException("Không tìm thấy booking trong mã QR.", StatusCodes.Status404NotFound);
+
+        var canManageParkingLot = await _dbContext.ParkingLotStaffs.AnyAsync(
+            staff => staff.ParkingLotId == booking.ParkingLotId && staff.UserId == _currentUser.UserId,
+            cancellationToken);
+        if (!canManageParkingLot)
+        {
+            throw new ApiException("Bạn không được phân công tại bãi xe của booking này.", StatusCodes.Status403Forbidden);
+        }
+
+        var licensePlate = booking.Vehicle?.LicensePlate ?? booking.GuestLicensePlate ?? "N/A";
+        if (booking.Status == BookingStatus.Pending)
+        {
+            booking.Status = BookingStatus.CheckedIn;
+            booking.CheckInTimestamp = DateTime.UtcNow;
+            if (booking.UserId.HasValue)
+            {
+                AddNotification(booking.UserId.Value, "Check-in thành công", $"Lượt {booking.BookingCode} đã được check-in.");
+            }
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new ProcessQrResponse(booking.Id, booking.BookingCode, licensePlate, booking.ParkingLotId,
+                booking.ParkingLot!.Name, booking.Status, "CheckedIn", null, booking.CheckInTimestamp);
+        }
+
+        if (booking.Status == BookingStatus.CheckedIn)
+        {
+            var estimatedTotal = CalculatePrice(booking.ParkingLot!, booking.CheckInTimestamp ?? DateTime.UtcNow, DateTime.UtcNow);
+            if (booking.Voucher is not null)
+            {
+                estimatedTotal = ApplyDiscount(estimatedTotal, booking.Voucher);
+            }
+            return new ProcessQrResponse(booking.Id, booking.BookingCode, licensePlate, booking.ParkingLotId,
+                booking.ParkingLot!.Name, booking.Status, "CheckoutConfirmationRequired", estimatedTotal, booking.CheckInTimestamp);
+        }
+
+        throw new ApiException($"Booking đang ở trạng thái {booking.Status} và không thể xử lý lại bằng QR.", StatusCodes.Status409Conflict);
+    }
+
+    private Guid ValidateBookingQrToken(string qrToken)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+        try
+        {
+            var principal = tokenHandler.ValidateToken(qrToken, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["Jwt:Audience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            }, out _);
+            if (principal.FindFirst("purpose")?.Value != "booking_qr")
+            {
+                throw new ApiException("Mã QR không đúng mục đích booking.", StatusCodes.Status400BadRequest);
+            }
+            var id = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(id, out var bookingId))
+            {
+                throw new ApiException("Mã QR không chứa booking hợp lệ.", StatusCodes.Status400BadRequest);
+            }
+            return bookingId;
+        }
+        catch (ApiException)
+        {
+            throw;
+        }
+        catch
+        {
+            throw new ApiException("Mã QR không hợp lệ hoặc đã hết hạn.", StatusCodes.Status400BadRequest);
+        }
+    }
+
     private async Task<Booking> GetBookingForCurrentUserAsync(Guid id, CancellationToken cancellationToken)
     {
-        var booking = await _dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == id, cancellationToken)
+        var booking = await _dbContext.Bookings.Include(b => b.Voucher).FirstOrDefaultAsync(b => b.Id == id, cancellationToken)
             ?? throw new ApiException("Booking was not found.", StatusCodes.Status404NotFound);
 
         var isBookingOwner = booking.UserId == _currentUser.UserId;
@@ -651,5 +785,6 @@ public sealed class BookingService : IBookingService
             booking.CheckInTimestamp,
             booking.CheckOutTimestamp,
             booking.Status,
-            booking.TotalPrice);
+            booking.TotalPrice,
+            booking.Voucher?.Code);
 }

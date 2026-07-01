@@ -1,7 +1,7 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './api-client.service';
-import { AppNotification, Booking, BookingHistoryItem, LayoutTemplate, OwnerStaffAssignment, PaginationResponse, ParkingFloor, ParkingLotDetail, ParkingLotSummary, ParkingSlot, Review, StaffBooking, User, AdminUser, Vehicle, VerifyBookingQr, Voucher, VoucherRequest, Wallet } from '../models/api.models';
+import { AdminDashboard, AdminUserWallet, AdminWalletStats, AppNotification, Booking, BookingHistoryItem, LayoutTemplate, OwnerStaffAssignment, PaginationResponse, ParkingFloor, ParkingLotDetail, ParkingLotSummary, ParkingSlot, ProcessBookingQr, Review, StaffBooking, User, AdminUser, Vehicle, VerifyBookingQr, Voucher, VoucherRequest, Wallet } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ParkingBookingApiService {
@@ -17,9 +17,10 @@ export class ParkingBookingApiService {
 
   getCurrentUser() { return this.api.get<User>('/users/me'); }
   updateMe(request: { fullName: string }) { return this.api.put<User>('/users/me', request); }
-  getAllUsers(page = 1, size = 10, hasPenalty?: boolean) {
+  getAllUsers(page = 1, size = 10, hasPenalty?: boolean, keyword?: string) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (hasPenalty !== undefined) params = params.set('hasPenalty', hasPenalty);
+    if (keyword?.trim()) params = params.set('keyword', keyword.trim());
     return this.api.get<PaginationResponse<AdminUser>>('/users', params);
   }
   createUser(request: any) { return this.api.post<AdminUser>('/users', request); }
@@ -40,6 +41,9 @@ export class ParkingBookingApiService {
   deleteVehicle(id: string) { return this.api.delete<{ deleted: boolean }>(`/vehicles/${id}`); }
   getWallet() { return this.api.get<Wallet>('/wallets/me'); }
   deposit(amount: number) { return this.api.post<{ amount: number; vietQrUrl: string }>('/wallets/deposit', { amount }); }
+  getAdminWalletStats() { return this.api.get<AdminWalletStats>('/wallets/admin/stats'); }
+  getAdminDashboard() { return this.api.get<AdminDashboard>('/admin/dashboard'); }
+  getAdminUserWallets(page = 1, size = 10, keyword?: string) { let params = new HttpParams().set('page', page).set('size', size); if (keyword?.trim()) params = params.set('keyword', keyword.trim()); return this.api.get<PaginationResponse<AdminUserWallet>>('/wallets/admin/users', params); }
   getValidVouchers() { return this.api.get<Voucher[]>('/vouchers/valid'); }
   createVoucher(request: VoucherRequest & { code: string }) { return this.api.post<Voucher>('/vouchers', request); }
   updateVoucher(id: string, request: VoucherRequest) { return this.api.put<Voucher>(`/vouchers/${id}`, request); }
@@ -52,7 +56,7 @@ export class ParkingBookingApiService {
   getMyStaffParkingLots() { return this.api.get<ParkingLotSummary[]>('/parking-lots/staff/me'); }
   getOwnerParkingLots() { return this.api.get<ParkingLotSummary[]>('/parking-lots/owner/me'); }
   getOwnerStaff() { return this.api.get<OwnerStaffAssignment[]>('/parking-lots/owner/staff'); }
-  getOwnerBookings() { return this.api.get<StaffBooking[]>('/bookings/owner'); }
+  getOwnerBookings(page = 1, size = 10) { return this.api.get<PaginationResponse<StaffBooking>>('/bookings/owner', new HttpParams().set('page', page).set('size', size)); }
   reportParkingLot(id: string, request: { status: number; currentLat: number; currentLng: number }) { return this.api.post<{ reported: boolean }>(`/parking-lots/${id}/report`, request); }
   addParkingLotStaff(id: string, userId: string) { return this.api.post<{ added: boolean }>(`/parking-lots/${id}/staff`, { userId }); }
   addParkingLotStaffByPhone(id: string, phoneNumber: string) { return this.api.post<{ added: boolean }>(`/parking-lots/${id}/staff/by-phone`, { phoneNumber }); }
@@ -67,11 +71,12 @@ export class ParkingBookingApiService {
   createBooking(request: { parkingSlotId: string; vehicleId?: string | null; guestLicensePlate?: string | null }) { return this.api.post<Booking>('/bookings', request); }
   getMyBookings() { return this.api.get<BookingHistoryItem[]>('/bookings/me'); }
   getRecentCompletedParkingLots() { return this.api.get<ParkingLotSummary[]>('/bookings/recent-parking-lots'); }
-  getStaffBookings() { return this.api.get<StaffBooking[]>('/bookings/staff'); }
+  getStaffBookings(page = 1, size = 10) { return this.api.get<PaginationResponse<StaffBooking>>('/bookings/staff', new HttpParams().set('page', page).set('size', size)); }
   getAllAdminBookings(page = 1, size = 10) { return this.api.get<PaginationResponse<StaffBooking>>('/bookings/admin/all', new HttpParams().set('page', page).set('size', size)); }
   markNoShow(id: string) { return this.api.post<{ noShow: boolean }>(`/bookings/${id}/no-show`, {}); }
   getBookingQr(id: string) { return this.api.get<{ qrToken: string }>(`/bookings/${id}/qr`); }
   verifyBookingQr(qrToken: string) { return this.api.post<VerifyBookingQr>('/bookings/verify-qr', { qrToken }); }
+  processBookingQr(qrToken: string) { return this.api.post<ProcessBookingQr>('/bookings/process-qr', { qrToken }); }
   checkIn(id: string) { return this.api.post<Booking>(`/bookings/${id}/check-in`); }
   applyVoucher(id: string, voucherCode: string) { return this.api.post<Booking>(`/bookings/${id}/apply-voucher`, { voucherCode }); }
   checkOut(id: string, useWallet: boolean, collectCash = false) { return this.api.post<{ totalPrice: number; vietQrUrl: string | null; status: string; checkOutTimestamp: string }>(`/bookings/${id}/check-out`, { useWallet, collectCash }); }

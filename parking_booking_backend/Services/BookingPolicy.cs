@@ -11,6 +11,9 @@ public static class BookingPolicy
     public static DateTime GetCheckInDeadline(DateTime bookingTimestamp)
         => bookingTimestamp.Add(CheckInWindow);
 
+    public static string FormatVietnamTime(DateTime utcTimestamp)
+        => DateTime.SpecifyKind(utcTimestamp, DateTimeKind.Utc).AddHours(7).ToString("HH:mm");
+
     public static bool IsViolation(BookingStatus status)
         => status is BookingStatus.Cancelled or BookingStatus.NoShow;
 

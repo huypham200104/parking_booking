@@ -115,7 +115,7 @@
     <div class="account-lock-dialog" role="presentation" (click)="closeLockedDialog()">
       <section role="alertdialog" aria-modal="true" aria-labelledby="booking-lock-title" (click)="$event.stopPropagation()">
         <span aria-hidden="true">!</span><h2 id="booking-lock-title">Không thể đặt chỗ</h2><p>{{ lockedMessage() }}</p>
-        <button class="btn btn-primary" type="button" (click)="closeLockedDialog()">Đã hiểu</button>
+        @if(activeBookingId()){<button class="btn btn-primary" type="button" (click)="openActiveBooking()">Mở lượt đặt hiện tại</button><button class="btn btn-secondary" type="button" (click)="closeLockedDialog()">Đóng</button>}@else{<button class="btn btn-primary" type="button" (click)="closeLockedDialog()">Đã hiểu</button>}
       </section>
     </div>
   }

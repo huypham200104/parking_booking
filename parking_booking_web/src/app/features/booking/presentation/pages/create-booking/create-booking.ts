@@ -38,6 +38,7 @@ export class CreateBookingComponent implements OnDestroy {
   readonly remainingSeconds = signal(0);
   readonly isHoldExpired = signal(false);
   readonly lockedMessage = signal('');
+  readonly activeBookingId = signal<string | null>(null);
   private countdownTimer: number | undefined;
   readonly reviews = signal<Review[]>([]);
   readonly isLoadingReviews = signal(false);
@@ -102,7 +103,10 @@ export class CreateBookingComponent implements OnDestroy {
         this.loadBookingQr(booking.id);
       },
       error: (error: ApiError) => {
-        if (error.status === 403) {
+        if (error.status === 409 && error.code === 'ACTIVE_BOOKING_EXISTS' && error.activeBookingId) {
+          this.activeBookingId.set(error.activeBookingId);
+          this.lockedMessage.set(error.message);
+        } else if (error.status === 403) {
           this.lockedMessage.set(error.message || 'Tài khoản của bạn đã bị khóa. Không thể tạo Booking mới.');
         } else {
           this.errorMessage.set(error.message ?? 'Không thể tạo đặt chỗ.');
@@ -114,7 +118,11 @@ export class CreateBookingComponent implements OnDestroy {
     const seconds = this.remainingSeconds();
     return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   }
-  closeLockedDialog(): void { this.lockedMessage.set(''); }
+  closeLockedDialog(): void { this.lockedMessage.set(''); this.activeBookingId.set(null); }
+  openActiveBooking(): void {
+    const id = this.activeBookingId();
+    if (id) void this.router.navigate(['/bookings', id]);
+  }
   bookingDateTime(value: string): string {
     return new Intl.DateTimeFormat('vi-VN', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -123,7 +131,8 @@ export class CreateBookingComponent implements OnDestroy {
   }
   private startHoldCountdown(checkInDeadline: string): void {
     window.clearInterval(this.countdownTimer);
-    const expiresAt = new Date(checkInDeadline).getTime();
+    const validDateStr = checkInDeadline.includes('Z') || checkInDeadline.includes('+') ? checkInDeadline : checkInDeadline + 'Z';
+    const expiresAt = new Date(validDateStr).getTime();
     const update = () => {
       const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
       this.remainingSeconds.set(seconds);

@@ -34,18 +34,20 @@ public sealed class BookingsController : ControllerBase
 
     [Authorize(Roles = "Guard")]
     [HttpGet("staff")]
-    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<StaffBookingResponse>>>> GetForStaff(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<PaginationResponse<StaffBookingResponse>>>> GetForStaff(
+        [FromQuery] int page = 1, [FromQuery] int size = 10, CancellationToken cancellationToken = default)
     {
-        var bookings = await _bookingService.GetForCurrentStaffAsync(cancellationToken);
-        return Ok(ApiResponse<IReadOnlyCollection<StaffBookingResponse>>.Ok(bookings));
+        var bookings = await _bookingService.GetForCurrentStaffAsync(page, size, cancellationToken);
+        return Ok(ApiResponse<PaginationResponse<StaffBookingResponse>>.Ok(bookings));
     }
 
     [Authorize(Roles = "ParkingOwner")]
     [HttpGet("owner")]
-    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<StaffBookingResponse>>>> GetForOwner(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<PaginationResponse<StaffBookingResponse>>>> GetForOwner(
+        [FromQuery] int page = 1, [FromQuery] int size = 10, CancellationToken cancellationToken = default)
     {
-        var bookings = await _bookingService.GetForOwnerAsync(cancellationToken);
-        return Ok(ApiResponse<IReadOnlyCollection<StaffBookingResponse>>.Ok(bookings));
+        var bookings = await _bookingService.GetForOwnerAsync(page, size, cancellationToken);
+        return Ok(ApiResponse<PaginationResponse<StaffBookingResponse>>.Ok(bookings));
     }
 
     [Authorize(Roles = "Admin")]
@@ -116,5 +118,13 @@ public sealed class BookingsController : ControllerBase
             return BadRequest(ApiResponse<VerifyQrResponse>.Fail(response.Message ?? "Invalid QR code."));
         }
         return Ok(ApiResponse<VerifyQrResponse>.Ok(response));
+    }
+
+    [Authorize(Roles = "Guard")]
+    [HttpPost("process-qr")]
+    public async Task<ActionResult<ApiResponse<ProcessQrResponse>>> ProcessQr(VerifyQrRequest request, CancellationToken cancellationToken)
+    {
+        var response = await _bookingService.ProcessQrAsync(request, cancellationToken);
+        return Ok(ApiResponse<ProcessQrResponse>.Ok(response));
     }
 }

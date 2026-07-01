@@ -17,6 +17,8 @@ export interface ProblemDetails {
   detail?: string;
   status?: number;
   errors?: Record<string, string[]>;
+  code?: string;
+  activeBookingId?: string;
 }
 
 export interface AppNotification { id: string; title: string; message: string; isRead: boolean; createdAt: string; }
@@ -37,15 +39,21 @@ export interface User { id: string; phoneNumber: string; fullName: string; role:
 export interface AdminUser extends User { isLocked: boolean; createdAt: string; penaltyCount: number; }
 export interface OwnerStaffAssignment { userId: string; fullName: string; phoneNumber: string; isLocked: boolean; createdAt: string; parkingLotId: string; parkingLotName: string; }
 export interface Vehicle { id: string; userId: string; licensePlate: string; vehicleType: number; isDefault: boolean; }
-export interface Booking { id: string; userId: string | null; vehicleId: string | null; guestLicensePlate: string | null; parkingLotId: string; parkingSlotId: string; bookingCode: string; bookingTimestamp: string; checkInTimestamp: string | null; checkOutTimestamp: string | null; status: string; totalPrice: number | null; }
-export interface BookingHistoryItem { id: string; bookingCode: string; parkingLotName: string; parkingLotAddress: string; licensePlate: string; bookingTimestamp: string; checkInTimestamp: string | null; checkOutTimestamp: string | null; status: number; totalPrice: number | null; }
+export interface Booking { id: string; userId: string | null; vehicleId: string | null; guestLicensePlate: string | null; parkingLotId: string; parkingSlotId: string; bookingCode: string; bookingTimestamp: string; checkInTimestamp: string | null; checkOutTimestamp: string | null; status: string; totalPrice: number | null; appliedVoucherCode: string | null; }
+export interface BookingHistoryItem { id: string; bookingCode: string; parkingLotName: string; parkingLotAddress: string; licensePlate: string; bookingTimestamp: string; checkInDeadline: string; checkInTimestamp: string | null; checkOutTimestamp: string | null; status: number; totalPrice: number | null; appliedVoucherCode: string | null; }
 export interface StaffBooking { id: string; bookingCode: string; parkingLotName: string; floorName: string; slotName: string; licensePlate: string; bookingTimestamp: string; checkInTimestamp: string | null; checkOutTimestamp: string | null; status: number; totalPrice: number | null; }
 export interface VerifyBookingQr { isValid: boolean; bookingId: string | null; bookingCode: string | null; licensePlate: string | null; message: string | null; }
+export interface ProcessBookingQr { bookingId: string; bookingCode: string; licensePlate: string; parkingLotId: string; parkingLotName: string; status: number; action: 'CheckedIn' | 'CheckoutConfirmationRequired'; estimatedTotal: number | null; checkInTimestamp: string | null; }
 export interface Review { id: string; userId: string; userName: string; rating: number; comment: string | null; createdAt: string; }
 export interface ParkingFloor { id: string; parkingLotId: string; floorName: string; templateId: string | null; customBackgroundImageUrl: string | null; }
 export interface ParkingSlot { id: string; parkingFloorId: string; slotName: string; status: number; vehicleType: number; positionX: number; positionY: number; width: number; height: number; rotation: number; }
 export interface LayoutTemplate { id: string; name: string; imageUrl: string; description: string; }
 export interface WalletTransaction { id: string; amount: number; type: string; referenceId: string; }
 export interface Wallet { id: string; userId: string; balance: number; transactions: WalletTransaction[]; }
+export interface AdminWalletDeposit { id: string; phoneNumber: string; fullName: string; amount: number; createdAt: string; }
+export interface AdminWalletStats { totalDeposited: number; depositedToday: number; depositCount: number; recentDeposits: AdminWalletDeposit[]; }
+export interface AdminUserWallet { userId: string; phoneNumber: string; fullName: string; totalDeposited: number; balance: number; }
+export interface AdminRecentBooking { id: string; bookingCode: string; userName: string; parkingLotName: string; licensePlate: string; status: number; totalPrice: number | null; bookingTimestamp: string; }
+export interface AdminDashboard { bookingsToday: number; activeParkingLots: number; totalParkingLots: number; pendingParkingLots: number; newUsersToday: number; recentBookings: AdminRecentBooking[]; }
 export interface Voucher { id: string; code: string; discountAmount: number | null; discountPercentage: number | null; maxDiscount: number | null; expiryDate: string; usageLimit: number; }
 export interface VoucherRequest { discountAmount: number | null; discountPercentage: number | null; maxDiscount: number | null; expiryDate: string; usageLimit: number; }

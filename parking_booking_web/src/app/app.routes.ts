@@ -99,6 +99,8 @@ export const routes: Routes = [
       { path: 'parking-lots', loadComponent: () => import('./features/admin/presentation/pages/parking-lots/parking-lots').then(m => m.ParkingLots), title: 'Quản lý bãi đỗ xe – ParkGo' },
       { path: 'bookings', loadComponent: () => import('./features/admin/presentation/pages/bookings/bookings').then(m => m.Bookings), title: 'Quản lý lượt đặt chỗ – ParkGo' },
       { path: 'users', loadComponent: () => import('./features/admin/presentation/pages/user-management/user-management').then(m => m.UserManagementComponent), title: 'Quản lý người dùng – ParkGo' },
+      { path: 'notifications', loadComponent: () => import('./features/admin/presentation/pages/notifications/notifications').then(m => m.AdminNotifications), title: 'Tạo thông báo – ParkGo' },
+      { path: 'wallet-statistics', loadComponent: () => import('./features/admin/presentation/pages/wallet-statistics/wallet-statistics').then(m => m.WalletStatistics), title: 'Thống kê tiền nạp – ParkGo' },
       { path: 'vouchers', loadComponent: () => import('./features/admin/presentation/pages/voucher-management/voucher-management').then(m => m.VoucherManagementComponent), title: 'Quản lý voucher – ParkGo' },
       { path: 'settings', loadComponent: () => import('./features/admin/presentation/pages/settings/settings').then(m => m.Settings), title: 'Cài đặt hệ thống – ParkGo' }
     ]

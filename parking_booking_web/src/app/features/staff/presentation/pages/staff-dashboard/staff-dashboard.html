@@ -48,8 +48,12 @@
       <article class="scanner-card card">
         <div class="section-heading">
           <span>01</span>
-          <div><h2>Đơn đang chờ xử lý</h2><p>Chọn một đơn để xem thời gian và thông tin chi tiết.</p></div>
+          <div><h2>Đơn đang chờ xử lý</h2><p>{{ bookingTotalCount() }} đơn tại các bãi được phân công.</p></div>
         </div>
+
+        @if (bookingTotalPages() > 1) {
+          <nav class="operation-actions booking-pagination" aria-label="Phân trang booking"><button class="btn btn-secondary" type="button" (click)="goToBookingPage(bookingPage()-1)" [disabled]="bookingPage()===1">‹</button><span>Trang {{bookingPage()}} / {{bookingTotalPages()}}</span><button class="btn btn-secondary" type="button" (click)="goToBookingPage(bookingPage()+1)" [disabled]="bookingPage()===bookingTotalPages()">›</button></nav>
+        }
 
         <div class="booking-queue">
           @if (isLoadingBookings()) {
@@ -73,14 +77,20 @@
           <div class="camera-controls">
             @if (!isCameraOpen()) { <button class="btn btn-secondary" type="button" (click)="startScanner()">Mở camera</button> }
             @else { <div class="camera-preview"><video #cameraVideo playsinline muted></video><span class="camera-preview__frame"></span></div><button class="btn btn-secondary" type="button" (click)="stopScanner()">Đóng camera</button> }
+            <label class="qr-upload btn btn-secondary"><i class="ph ph-image"></i> Tải ảnh QR<input type="file" accept="image/*" (change)="uploadQrImage($event)" [disabled]="isSubmitting()"></label>
             @if (cameraMessage()) { <p class="camera-message">{{ cameraMessage() }}</p> }
           </div>
           <label class="scanner-field"><span>Nội dung QR</span><textarea rows="3" [ngModel]="qrToken()" (ngModelChange)="qrToken.set($event)"></textarea></label>
-          <button class="btn btn-secondary" type="button" (click)="verifyQr()" [disabled]="isSubmitting() || !qrToken().trim()">Tìm đơn</button>
+          <button class="btn btn-secondary" type="button" (click)="verifyQr()" [disabled]="isSubmitting() || !qrToken().trim()">Xử lý QR</button>
         </details>
 
         @if (errorMessage()) { <p class="notice notice--error" role="alert">{{ errorMessage() }}</p> }
         @if (successMessage()) { <p class="notice notice--success" role="status">{{ successMessage() }}</p> }
+        @if (checkoutConfirmation(); as confirmation) {
+          <div class="checkout-confirmation">
+            <span>Xác nhận checkout</span><p>{{ confirmation.licensePlate }} · {{ confirmation.bookingCode }} · {{ confirmation.parkingLotName }}</p><strong>{{ (confirmation.estimatedTotal ?? 0).toLocaleString('vi-VN') }}đ</strong><small>Số tiền tạm tính. Backend sẽ tính lại tại thời điểm checkout.</small><button class="btn btn-primary" type="button" (click)="checkOut()" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Đang checkout...' : 'Đã thu tiền mặt – Checkout' }}</button>
+          </div>
+        }
       </article>
 
       <aside class="verification-card card">
@@ -106,6 +116,7 @@
             <button class="btn btn-primary" type="button" (click)="checkIn()" [disabled]="isSubmitting() || result.status !== 0">Check-in xe</button>
             <button class="btn btn-secondary" type="button" (click)="checkOut()" [disabled]="isSubmitting() || result.status !== 1">Check-out và tính tiền</button>
           </div>
+
 
           @if (checkoutResult(); as payment) {
             <div class="payment-result">
